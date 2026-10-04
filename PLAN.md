@@ -592,12 +592,12 @@ Each milestone ends with: tests passing, checklist ticked here, and a commit.
 **Done when:** the repo is on GitHub with `main` protected, a fresh clone runs with the commands in `CLAUDE.md`, the app deploys, CI is green, and `supabase db reset` rebuilds the database with seed data.
 
 ### M1: Engine core
-- [ ] `rng.ts` (mulberry32) with `int`, `pick`, `shuffle`
-- [ ] `types.ts` and zod schema for `AnswerSpec`
-- [ ] Answer checker for `integer`, `decimal`, `fraction`, `percentage`, `mcq`, with tests from 6.3
-- [ ] `scoring.ts` with tests
-- [ ] Generator registry and the first 8 generators (fractions, percentages, rounding, HCF/LCM)
-- [ ] Generator property test harness running over all registered generators
+- [x] `rng.ts` (mulberry32) with `int`, `pick`, `shuffle`
+- [x] `types.ts` and zod schema for `AnswerSpec`
+- [x] Answer checker for `integer`, `decimal`, `fraction`, `percentage`, `mcq`, with tests from 6.3
+- [x] `scoring.ts` with tests
+- [x] Generator registry and the first 8 generators (fractions, percentages, rounding, HCF/LCM)
+- [x] Generator property test harness running over all registered generators
 
 **Done when:** all unit and property tests pass over 500 seeds per generator.
 
