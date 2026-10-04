@@ -282,3 +282,60 @@ describe("multi", () => {
     expect(marksForParts(2, 4, [1])).toEqual([2, 2]);
   });
 });
+
+// Exact strings MathLive 0.111 produced when these keys were typed (with
+// mathModeSpace "\,"), recorded from a browser probe. Keep in sync if MathLive changes.
+describe("real MathLive output", () => {
+  const cases: [string, AnswerSpec, string, boolean][] = [
+    ["2x+4", expr("2x+4"), "2x+4", true],
+    ["2x + 4", expr("2x+4"), "2x\\,+\\,4", true],
+    ["4+2x", expr("2x+4"), "4+2x", true],
+    ["2(x+2)", expr("2(x+2)", "factorised"), "2\\left(x+2\\right)", true],
+    ["2x+4 (factorised wanted)", expr("2(x+2)", "factorised"), "2x+4", false],
+    ["(x-2)(x+2)", expr("x^2-4", "expanded"), "\\left(x-2\\right)\\left(x+2\\right)", false],
+    ["x^2-4", expr("x^2-4", "expanded"), "x^2-4", true],
+    ["x^2+5x+6", expr("x^{2}+5x+6", "expanded"), "x^2+5x+6", true],
+    ["3x(2x-1)", expr("3x(2x-1)", "factorised"), "3x\\left(2x-1\\right)", true],
+    ["(x+3)^2", expr("(x+3)^{2}", "factorised"), "\\left(x+3\\right)^2", true],
+    [
+      "x=(y-2)/3",
+      { kind: "expression", latex: "\\frac{y-2}{3}", variables: ["x", "y"] },
+      "x=\\frac{\\left(y-2\\right)}{3}",
+      true,
+    ],
+    [
+      "x=2 or x=-3",
+      { kind: "solutions", variable: "x", values: [2, -3] },
+      "x=2\\,\\lor\\,x=-3",
+      true,
+    ],
+    ["x = 7", { kind: "solutions", variable: "x", values: [7] }, "x\\,=\\,7", true],
+    ["2:5", { kind: "ratio", parts: [2, 5] }, "2:5", true],
+    ["4.5*10^3", { kind: "standardForm", mantissa: 4.5, exponent: 3 }, "4.5\\cdot10^3", true],
+    ["6.2*10^-3", { kind: "standardForm", mantissa: 6.2, exponent: -3 }, "6.2\\cdot10^{-3}", true],
+    ["3/4", { kind: "fraction", num: 3, den: 4, mustBeSimplest: true }, "\\frac34", true],
+    [
+      "1 1/2",
+      { kind: "fraction", num: 3, den: 2, mustBeSimplest: true, allowMixed: true },
+      "1\\,\\frac12",
+      true,
+    ],
+    [
+      "2 3/4",
+      { kind: "fraction", num: 11, den: 4, mustBeSimplest: true, allowMixed: true },
+      "2\\,\\frac34",
+      true,
+    ],
+    [
+      "12 1/10",
+      { kind: "fraction", num: 121, den: 10, mustBeSimplest: true, allowMixed: true },
+      "12\\,\\frac{1}{10}",
+      true,
+    ],
+    ["12 500", { kind: "integer", value: 12500 }, "12\\,500", true],
+    ["-3", { kind: "integer", value: -3 }, "-3", true],
+  ];
+  it.each(cases)("typed %s", (_typed, spec, latex, expected) => {
+    expect(check(spec, latex).correct).toBe(expected);
+  });
+});

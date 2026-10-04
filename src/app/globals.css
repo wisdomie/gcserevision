@@ -54,3 +54,8 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* MathLive: hide the (empty) context-menu button */
+math-field::part(menu-toggle) {
+  display: none;
+}
