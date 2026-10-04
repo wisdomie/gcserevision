@@ -145,3 +145,34 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
     within milliseconds drops the first key. Tests rely on the auto-focus instead.
 - **Follow-up:** a GCSE-specific on-screen keyboard layout. The default layout includes keys
   GCSE students don't need (∀, i, integrals).
+
+## M4
+
+- **Strongest and weakest topics** need at least 3 answers on a topic to be judged; fewer
+  are listed as "not enough answers yet". A topic is never both strongest and weakest.
+  The weak list links to solo practice with that topic ticked (`/play/solo?topics=…`).
+- **Weekly leaderboard:**
+  - XP earned from answers since Monday 00:00 UK time, ranked with ties sharing a rank;
+  - top 20, plus the player's own row if they're outside it;
+  - the global board shows only username, avatar and weekly XP, and only to signed-in
+    players.
+  - It is served by `security definer` functions (`weekly_leaderboard`, `played_with`), so
+    `answers` stays unreadable to clients.
+- **Friends = people you've shared a live room with** (PLAN.md 9). The list is empty until
+  rooms ship in M5.
+- **Daily streak leaderboard** waits for the daily challenge in M6.
+- **Account deletion:** `POST /api/account/delete` (typed "DELETE" confirmation) deletes the
+  auth user with the service role; the database cascades to profile, sessions, answers,
+  stats and room memberships.
+  - `rooms.host_id` is now nullable with `on delete set null`, so deleting a host keeps other
+    players' rooms and answers. Any player can already advance a room (PLAN.md 10).
+- **Guests can add an email** from their profile (`auth.updateUser`), which keeps their
+  progress on the same account.
+- **`/profile` and `/leaderboard` share the signed-in layout with `/play`**, via an `(app)`
+  route group. The onboarding form is now a shared `ProfileForm`.
+- **Header XP** refreshes when a solo session ends. Next keeps shared layouts across
+  client-side navigation, so XP earned elsewhere (another tab) shows on the next full page
+  load.
+- **Privacy notice** is plain English for 14–16-year-olds and is linked from every page. It
+  is not legal advice: before launch it needs the operator's name and contact details, and a
+  review against the UK Children's Code.
