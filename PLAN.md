@@ -581,8 +581,8 @@ Each milestone ends with: tests passing, checklist ticked here, and a commit.
   - `CLAUDE.md` done. **User action:** protect `main` in GitHub settings (require PR + `CI` check).
 - [x] Initialise Next.js + TypeScript (strict) + Tailwind + ESLint + Prettier with pnpm
 - [x] Add Vitest and Playwright config; GitHub Actions `ci.yml` and `integration.yml` (section 3.3)
-- [ ] `supabase init`; local Supabase running; `.env.example`
-  - `supabase init` and `.env.example` done. The full local stack can't pull images in the cloud sandbox; migrations, seed and RLS tests were verified on a standalone `supabase/postgres` container. Tick once `integration.yml` is green.
+- [x] `supabase init`; local Supabase running; `.env.example`
+  - Verified by `integration.yml` (full stack, `db reset`, pgTAP RLS tests). The cloud sandbox can't pull the Supabase images, so run database work in CI there.
 - [x] Migrations for all tables in section 5.1, with RLS per section 5.2
 - [x] `seed.sql`: the four exam boards, the `maths` subject (active), the topic taxonomy from section 7
 - [x] Supabase clients (browser, server, service-role) in `src/lib/supabase/`
