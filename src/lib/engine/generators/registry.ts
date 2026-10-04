@@ -1,5 +1,9 @@
 import type { BoardSlug, CalcMode, QuestionGenerator, Tier } from "../types";
+import { expandDouble, expandSingle } from "./algebra/expand";
+import { factoriseCommon, factoriseQuadratic } from "./algebra/factorise";
 import { nthTerm } from "./algebra/nth-term";
+import { rearrange } from "./algebra/rearrange";
+import { simplifyExpression } from "./algebra/simplify";
 import { solveLinearTwoStep, solveUnknownBothSides } from "./algebra/solve-linear";
 import { solveQuadratic } from "./algebra/solve-quadratic";
 import { substitute } from "./algebra/substitute";
@@ -45,6 +49,12 @@ const ALL: readonly QuestionGenerator[] = [
   standardFormConvert,
   standardFormCalc,
   // Algebra
+  simplifyExpression,
+  expandSingle,
+  expandDouble,
+  factoriseCommon,
+  factoriseQuadratic,
+  rearrange,
   solveLinearTwoStep,
   solveUnknownBothSides,
   solveQuadratic,
