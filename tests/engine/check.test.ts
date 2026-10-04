@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { check, FEEDBACK } from "@/lib/engine/answers/check";
-import { normalise, parseFraction, parseNumber } from "@/lib/engine/answers/normalise";
+import {
+  normalise,
+  parseFraction,
+  parseNumber,
+  parseRatio,
+  parseSolutions,
+  parseStandardForm,
+  parseValue,
+} from "@/lib/engine/answers/normalise";
 import type { AnswerSpec } from "@/lib/engine/types";
 
 const ok = (spec: AnswerSpec, raw: string) =>
@@ -296,9 +304,6 @@ describe("robustness", () => {
   it("reports kinds not implemented until M3", () => {
     const pending: AnswerSpec[] = [
       { kind: "expression", latex: "2x+4", variables: ["x"] },
-      { kind: "solutions", variable: "x", values: [2, -3] },
-      { kind: "ratio", parts: [2, 3] },
-      { kind: "standardForm", mantissa: 4.5, exponent: 3 },
       { kind: "multi", parts: [{ label: "a", spec: { kind: "integer", value: 1 } }] },
     ];
     for (const spec of pending) no(spec, "1", FEEDBACK.unsupported);
@@ -312,5 +317,97 @@ describe("robustness", () => {
       },
     } as unknown as AnswerSpec;
     no(evil, "1", FEEDBACK.unreadable);
+  });
+});
+
+describe("solutions", () => {
+  const two: AnswerSpec = { kind: "solutions", variable: "x", values: [2, -3] };
+  const one: AnswerSpec = { kind: "solutions", variable: "y", values: [1.5] };
+
+  it("PLAN.md 6.3: x=2 or x=-3 and -3, 2 are correct; 2 alone is wrong", () => {
+    ok(two, "x=2 or x=-3");
+    ok(two, "-3, 2");
+    no(two, "2", FEEDBACK.extra);
+  });
+  it("accepts other separators, LaTeX and subscripts", () => {
+    ok(two, "-3 and 2");
+    ok(two, "x = 2; x = −3");
+    ok(two, "$x = 2$ or $x = -3$");
+    ok(two, "x_1 = 2, x_2 = -3");
+    ok(two, "x=2 \\text{ or } x=-3");
+    ok(two, "x = 2 \\lor x = -3");
+  });
+  it("rejects extras, duplicates and wrong values", () => {
+    no(two, "2, -3, 4");
+    no(two, "2, 2");
+    no(two, "2, 3");
+    no(two, "x = 2 or y = -3", FEEDBACK.unreadable);
+  });
+  it("accepts fractions and decimals for the value, and the right variable only", () => {
+    ok(one, "y = 1.5");
+    ok(one, "y = 3/2");
+    ok(one, "\\frac{3}{2}");
+    no(one, "x = 1.5", FEEDBACK.unreadable);
+    no(one, "y =", FEEDBACK.unreadable);
+  });
+});
+
+describe("ratio", () => {
+  const spec: AnswerSpec = { kind: "ratio", parts: [2, 3] };
+  it("accepts the simplest ratio in order", () => {
+    ok(spec, "2:3");
+    ok(spec, "2 : 3");
+    ok(spec, "$2 : 3$");
+    ok(spec, "2 \\colon 3");
+    ok({ kind: "ratio", parts: [1, 2, 4] }, "1:2:4");
+  });
+  it("asks for simplification of an equivalent ratio", () => no(spec, "4:6", FEEDBACK.simplify));
+  it("rejects the wrong order, wrong length and nonsense", () => {
+    no(spec, "3:2");
+    no(spec, "2:3:1");
+    no(spec, "2/3", FEEDBACK.unreadable);
+    no(spec, "a:b", FEEDBACK.unreadable);
+  });
+});
+
+describe("standardForm", () => {
+  const spec: AnswerSpec = { kind: "standardForm", mantissa: 4.5, exponent: 3 };
+  it("PLAN.md 6.3: 4.5 \\times 10^{3} and 4.5e3 are correct", () => {
+    ok(spec, "4.5 \\times 10^{3}");
+    ok(spec, "4.5e3");
+  });
+  it("accepts other ways of writing it", () => {
+    ok(spec, "4.5 x 10^3");
+    ok(spec, "4.5*10^3");
+    ok(spec, "4.5 × 10³");
+    ok(spec, "$4.5 \\times 10^{3}$");
+    ok({ kind: "standardForm", mantissa: 3.2, exponent: -4 }, "3.2 × 10⁻⁴");
+    ok({ kind: "standardForm", mantissa: 3.2, exponent: -4 }, "3.2 \\times 10^{-4}");
+  });
+  it("wants standard form, not an equal number in another form", () => {
+    no(spec, "4500", FEEDBACK.standardForm);
+    no(spec, "45 \\times 10^{2}", FEEDBACK.standardForm);
+    no(spec, "0.45e4", FEEDBACK.standardForm);
+  });
+  it("rejects wrong values and nonsense", () => {
+    no(spec, "4.5 \\times 10^{4}");
+    no(spec, "4600");
+    no(spec, "four thousand", FEEDBACK.unreadable);
+  });
+});
+
+describe("normalise edge cases", () => {
+  it("keeps a lone $ as currency and strips paired $ as delimiters", () => {
+    expect(normalise("$5")).toBe("$5");
+    expect(normalise("$x = 2$ or $x = 3$")).toBe("x = 2 or x = 3");
+    expect(normalise("10²")).toBe("10^{2}");
+  });
+  it("parses values used inside lists", () => {
+    expect(parseValue("3/4")).toBe(0.75);
+    expect(parseValue("2")).toBe(2);
+    expect(parseValue("x")).toBeNull();
+    expect(parseSolutions("", "x")).toBeNull();
+    expect(parseRatio("2")).toBeNull();
+    expect(parseStandardForm("4.5 * 10^{3}")).toEqual({ mantissa: 4.5, exponent: 3 });
   });
 });

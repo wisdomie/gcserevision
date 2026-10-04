@@ -19,6 +19,11 @@ const eslintConfig = defineConfig([
               group: ["@/lib/supabase/admin", "**/lib/supabase/admin"],
               message: "The service-role client is server-only. Use it in route handlers only.",
             },
+            {
+              group: ["@/lib/game/*-server", "**/lib/game/*-server"],
+              message:
+                "Server game services use the service-role client. Call them from route handlers only.",
+            },
           ],
         },
       ],

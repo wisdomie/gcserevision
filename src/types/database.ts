@@ -511,6 +511,42 @@ export type Database = {
           },
         ];
       };
+      solo_session_questions: {
+        Row: {
+          idx: number;
+          instance_id: string;
+          served_at: string;
+          session_id: string;
+        };
+        Insert: {
+          idx: number;
+          instance_id: string;
+          served_at?: string;
+          session_id: string;
+        };
+        Update: {
+          idx?: number;
+          instance_id?: string;
+          served_at?: string;
+          session_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "solo_session_questions_instance_id_fkey";
+            columns: ["instance_id"];
+            isOneToOne: true;
+            referencedRelation: "question_instances";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "solo_session_questions_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "solo_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       solo_sessions: {
         Row: {
           finished_at: string | null;
@@ -696,7 +732,39 @@ export type Database = {
       };
     };
     Functions: {
-      [_ in never]: never;
+      record_solo_answer: {
+        Args: {
+          p_finish: boolean;
+          p_instance_id: string;
+          p_is_correct: boolean;
+          p_marks_awarded: number;
+          p_points: number;
+          p_raw_answer: string;
+          p_session_id: string;
+          p_streak: number;
+          p_time_ms: number;
+          p_topic_id: number;
+          p_user_id: string;
+        };
+        Returns: undefined;
+      };
+      serve_solo_question: {
+        Args: {
+          p_answer_spec: Json;
+          p_calculator: string;
+          p_generator_key: string;
+          p_idx: number;
+          p_marks: number;
+          p_public_payload: Json;
+          p_seed: number;
+          p_session_id: string;
+          p_solution: Json;
+          p_subject_id: number;
+          p_tier: string;
+          p_topic_id: number;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       [_ in never]: never;

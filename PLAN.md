@@ -602,12 +602,13 @@ Each milestone ends with: tests passing, checklist ticked here, and a commit.
 **Done when:** all unit and property tests pass over 500 seeds per generator.
 
 ### M2: Solo mode, MVP
-- [ ] Auth plus `/onboarding` (username, avatar, board, tier)
-- [ ] `/play/solo` setup, session start/answer routes, question loop UI with `<Math>` rendering
-- [ ] Question selection by board, tier and topic (section 5.4)
-- [ ] Worked solution shown after each answer; results summary screen
-- [ ] Update `topic_stats` and `xp`
-- [ ] Remaining Phase 1 generators (about 24 total)
+- [x] Auth plus `/onboarding` (username, avatar, board, tier)
+- [x] `/play/solo` setup, session start/answer routes, question loop UI with `<Math>` rendering
+- [x] Question selection by board, tier and topic (section 5.4)
+- [x] Worked solution shown after each answer; results summary screen
+- [x] Update `topic_stats` and `xp`
+- [x] Remaining Phase 1 generators (about 24 total)
+  - 29 generators. The 6 expression-answer ones (simplify, expand, factorise, rearrange) come with the expression checker in M3; see DECISIONS.md.
 
 **Done when:** a new user can sign up, choose AQA Higher, play a 10-question Algebra session, and see correct marking and solutions on a phone-sized screen.
 
