@@ -2,13 +2,23 @@
 
 import type { AnswerSpec, CheckResult } from "../types";
 import { approxEqual, gcd, roundDp, roundSf } from "../util/numbers";
-import { MAX_ANSWER_LENGTH, normalise, parseFraction, parseNumber } from "./normalise";
+import {
+  MAX_ANSWER_LENGTH,
+  normalise,
+  parseFraction,
+  parseNumber,
+  parseRatio,
+  parseSolutions,
+  parseStandardForm,
+} from "./normalise";
 
 export const FEEDBACK = {
   unreadable: "Could not read your answer",
   simplify: "Simplify your answer",
   fraction: "Give your answer as a fraction",
   rounding: "Check your rounding",
+  standardForm: "Give your answer in standard form",
+  extra: "Check how many solutions you have given",
   unsupported: "This answer type can't be marked yet",
 } as const;
 
@@ -93,10 +103,49 @@ function checkNormalised(spec: AnswerSpec, s: string, marks: number): CheckResul
       return right(marks);
     }
 
+    case "solutions": {
+      const values = parseSolutions(s, spec.variable);
+      if (!values) return wrong(FEEDBACK.unreadable);
+      if (values.length !== spec.values.length) {
+        const allRight = values.every((v) => spec.values.some((e) => approxEqual(v, e)));
+        return wrong(allRight ? FEEDBACK.extra : undefined);
+      }
+      const remaining = [...spec.values];
+      for (const v of values) {
+        const i = remaining.findIndex((e) => approxEqual(v, e));
+        if (i === -1) return wrong();
+        remaining.splice(i, 1);
+      }
+      return right(marks);
+    }
+
+    case "ratio": {
+      const parts = parseRatio(s);
+      if (!parts) return wrong(FEEDBACK.unreadable);
+      if (parts.length !== spec.parts.length) return wrong();
+      if (parts.every((p, i) => approxEqual(p, spec.parts[i]))) return right(marks);
+      // Same proportions but not simplified
+      const k = parts[0] / spec.parts[0];
+      if (k > 0 && parts.every((p, i) => approxEqual(p, spec.parts[i] * k)))
+        return wrong(FEEDBACK.simplify);
+      return wrong();
+    }
+
+    case "standardForm": {
+      const expected = spec.mantissa * 10 ** spec.exponent;
+      const sf = parseStandardForm(s);
+      if (!sf) {
+        const x = parseNumber(s);
+        if (x !== null && approxEqual(x, expected)) return wrong(FEEDBACK.standardForm);
+        return x === null ? wrong(FEEDBACK.unreadable) : wrong();
+      }
+      const valueMatches = approxEqual(sf.mantissa * 10 ** sf.exponent, expected);
+      const isStandard = Math.abs(sf.mantissa) >= 1 && Math.abs(sf.mantissa) < 10;
+      if (valueMatches && isStandard && sf.exponent === spec.exponent) return right(marks);
+      return wrong(valueMatches ? FEEDBACK.standardForm : undefined);
+    }
+
     case "expression":
-    case "solutions":
-    case "ratio":
-    case "standardForm":
     case "multi":
       // Implemented in M3.
       return wrong(FEEDBACK.unsupported);

@@ -3,25 +3,43 @@
 
 export const MAX_ANSWER_LENGTH = 200;
 
+const SUPERSCRIPTS: Record<string, string> = {
+  "⁰": "0",
+  "¹": "1",
+  "²": "2",
+  "³": "3",
+  "⁴": "4",
+  "⁵": "5",
+  "⁶": "6",
+  "⁷": "7",
+  "⁸": "8",
+  "⁹": "9",
+  "⁻": "-",
+};
+
 /**
  * Canonical form of a raw answer: trimmed, single-spaced, ASCII minus, math
  * delimiters removed and common LaTeX noise stripped.
  */
 export function normalise(raw: string): string {
-  let s = raw.normalize("NFKC");
+  // Superscript digits become ^{...} before NFKC would flatten 10³ into "103".
+  let s = raw.replace(
+    /[⁻⁰¹²³⁴⁵⁶⁷⁸⁹]+/g,
+    (sup) => `^{${[...sup].map((c) => SUPERSCRIPTS[c]).join("")}}`,
+  );
+  s = s.normalize("NFKC");
   // Unicode minus and dashes -> '-'
   s = s.replace(/[−‐-―﹣－]/g, "-");
   s = s.replace(/\s+/g, " ").trim();
 
-  // Inline-math delimiters: $...$, $$...$$, \(...\)
-  let m = /^\$\$(.*)\$\$$/.exec(s) ?? /^\$(.*)\$$/.exec(s) ?? /^\\\((.*)\\\)$/.exec(s);
-  while (m) {
-    s = m[1].trim();
-    m = /^\$(.*)\$$/.exec(s);
-  }
+  // Inline-math delimiters. Two or more unescaped $ are delimiters ($x = 2$ or
+  // $x = 3$); a single $ is a currency sign and is left for parseNumber.
+  if ((s.match(/(?<!\\)\$/g) ?? []).length >= 2) s = s.replace(/(?<!\\)\$/g, "");
+  s = s.replace(/\\[()[\]]/g, "");
 
   s = s
     .replace(/\\(?:left|right)(?=[()[\]|.]|\\[{}])/g, "")
+    .replace(/\\(?:quad|qquad)/g, " ")
     .replace(/\\(?:text|mathrm|textrm|mathit|operatorname)\{([^{}]*)\}/g, "$1")
     .replace(/\\[dt]frac/g, "\\frac")
     .replace(/\{,\}/g, ",") // MathLive thousands/decimal comma
@@ -29,6 +47,7 @@ export function normalise(raw: string): string {
     .replace(/\\%/g, "%")
     .replace(/\\(?:pounds|textsterling) ?/g, "£")
     .replace(/\\\$/g, "$")
+    .replace(/\\colon/g, ":")
     .replace(/\\(?:times|cdot)/g, "*")
     .replace(/×|·/g, "*");
 
@@ -126,4 +145,54 @@ export function parseFraction(s: string): ParsedFraction | null {
     return { num: neg ? -num : num, den: d, whole: neg ? -whole : whole };
   }
   return null;
+}
+
+/**
+ * Parses a number or a fraction (3/4, \frac{3}{4}, 1 1/2) to its value.
+ * Returns null otherwise.
+ */
+export function parseValue(s: string): number | null {
+  const x = parseNumber(s);
+  if (x !== null) return x;
+  const f = parseFraction(s);
+  return f ? f.num / f.den : null;
+}
+
+/**
+ * Splits a list of solutions such as "x = 2 or x = -3", "2, -3" or "-3 and 2".
+ * Each item has an optional "x =" prefix. Returns null if any item is
+ * unreadable or names a different variable.
+ */
+export function parseSolutions(s: string, variable: string): number[] | null {
+  const items = s
+    .split(/\s*(?:,|;|\bor\b|\band\b|\\lor)\s*/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+  if (items.length === 0) return null;
+  const values: number[] = [];
+  for (const item of items) {
+    const m = /^([a-zA-Z])(?:_\{?\d\}?)?\s*=\s*(.+)$/.exec(item);
+    if (m && m[1] !== variable) return null;
+    const value = parseValue(m ? m[2] : item);
+    if (value === null) return null;
+    values.push(value);
+  }
+  return values;
+}
+
+/** Parses "a : b" or "a : b : c" into its parts. */
+export function parseRatio(s: string): number[] | null {
+  const parts = s.split(":").map((t) => parseValue(t.trim()));
+  if (parts.length < 2 || parts.some((p) => p === null)) return null;
+  return parts as number[];
+}
+
+/** Parses a × 10^n, a*10^{n}, a x 10^n or aEn into mantissa and exponent. */
+export function parseStandardForm(s: string): { mantissa: number; exponent: number } | null {
+  const m =
+    /^([+-]?\d+(?:\.\d+)?)\s*(?:\*|x|X)\s*10\s*\^\s*(?:\{\s*([+-]?\d{1,3})\s*\}|([+-]?\d{1,3}))$/.exec(
+      s,
+    ) ?? /^([+-]?\d+(?:\.\d+)?)[eE]([+-]?\d{1,3})$/.exec(s);
+  if (!m) return null;
+  return { mantissa: Number(m[1]), exponent: Number(m[2] ?? m[3]) };
 }
