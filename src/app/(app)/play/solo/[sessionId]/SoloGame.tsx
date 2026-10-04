@@ -29,7 +29,16 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
-export function SoloGame({ sessionId }: { sessionId: string }) {
+export function SoloGame({
+  sessionId,
+  onFinished,
+  backHref = "/play/solo",
+}: {
+  sessionId: string;
+  /** Show your own results instead of the solo results (the daily does this). */
+  onFinished?: () => void;
+  backHref?: string;
+}) {
   const [state, setState] = useState<SoloState | null>(null);
   const [view, setView] = useState<View>({ kind: "loading" });
   const [answer, setAnswer] = useState("");
@@ -55,8 +64,10 @@ export function SoloGame({ sessionId }: { sessionId: string }) {
   // XP in the header comes from the server: refresh it once the session ends
   const router = useRouter();
   useEffect(() => {
-    if (view.kind === "finished") router.refresh();
-  }, [view.kind, router]);
+    if (view.kind !== "finished") return;
+    router.refresh();
+    onFinished?.();
+  }, [view.kind, router, onFinished]);
 
   async function submit(raw = answer) {
     if (view.kind !== "question" || !raw.trim() || submitting) return;
@@ -95,12 +106,13 @@ export function SoloGame({ sessionId }: { sessionId: string }) {
     return (
       <div className="flex flex-col gap-4">
         <Alert>{view.message}</Alert>
-        <ButtonLink href="/play/solo" variant="secondary">
-          Back to solo practice
+        <ButtonLink href={backHref} variant="secondary">
+          {backHref === "/play/solo" ? "Back to solo practice" : "Back to the hub"}
         </ButtonLink>
       </div>
     );
   }
+  if (view.kind === "finished" && onFinished) return <p role="status">Loading your results…</p>;
   if (view.kind === "finished") return <Results summary={view.summary} headingRef={headingRef} />;
 
   const { current } = view;
