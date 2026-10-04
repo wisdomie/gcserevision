@@ -11,6 +11,14 @@ import {
   parseSolutions,
   parseStandardForm,
 } from "./normalise";
+import {
+  equivalent,
+  isExpanded,
+  isFactorised,
+  isSimplified,
+  parseExpression,
+  stripSubject,
+} from "./expression";
 
 export const FEEDBACK = {
   unreadable: "Could not read your answer",
@@ -19,6 +27,8 @@ export const FEEDBACK = {
   rounding: "Check your rounding",
   standardForm: "Give your answer in standard form",
   extra: "Check how many solutions you have given",
+  expand: "Expand the brackets and simplify fully",
+  factorise: "Factorise your answer fully",
   unsupported: "This answer type can't be marked yet",
 } as const;
 
@@ -35,6 +45,7 @@ export function check(spec: AnswerSpec, raw: string, marks = 1): CheckResult {
   try {
     if (typeof raw !== "string" || raw.length > MAX_ANSWER_LENGTH)
       return wrong(FEEDBACK.unreadable);
+    if (spec.kind === "multi") return checkMulti(spec, raw, marks);
     const s = normalise(raw);
     if (!s) return wrong(FEEDBACK.unreadable);
     return checkNormalised(spec, s, marks);
@@ -145,9 +156,20 @@ function checkNormalised(spec: AnswerSpec, s: string, marks: number): CheckResul
       return wrong(valueMatches ? FEEDBACK.standardForm : undefined);
     }
 
-    case "expression":
+    case "expression": {
+      const answer = parseExpression(stripSubject(s));
+      const reference = parseExpression(spec.latex);
+      if (!answer) return wrong(FEEDBACK.unreadable);
+      if (!reference || !equivalent(answer, reference)) return wrong();
+      const form = spec.form ?? "any";
+      if (form === "expanded" && !isExpanded(answer)) return wrong(FEEDBACK.expand);
+      if (form === "factorised" && !isFactorised(answer)) return wrong(FEEDBACK.factorise);
+      if (form === "simplified" && !isSimplified(answer)) return wrong(FEEDBACK.simplify);
+      return right(marks);
+    }
+
     case "multi":
-      // Implemented in M3.
+      // Handled before normalisation in check().
       return wrong(FEEDBACK.unsupported);
   }
 }
@@ -159,4 +181,42 @@ function isRoundingOf(value: number, x: number): boolean {
     if (approxEqual(x, roundDp(value, dp))) return true;
   }
   return false;
+}
+
+/** Splits `marks` across parts: explicit marksPerPart, or as evenly as possible (earlier parts get the spare). */
+export function marksForParts(count: number, marks: number, marksPerPart?: number[]): number[] {
+  if (marksPerPart && marksPerPart.length === count) return marksPerPart;
+  const base = Math.floor(marks / count);
+  return Array.from({ length: count }, (_, i) => base + (i < marks % count ? 1 : 0));
+}
+
+/** Multi-part answers arrive as a JSON array of strings, one per part. */
+function checkMulti(
+  spec: Extract<AnswerSpec, { kind: "multi" }>,
+  raw: string,
+  marks: number,
+): CheckResult {
+  let answers: unknown;
+  try {
+    answers = JSON.parse(raw);
+  } catch {
+    return wrong(FEEDBACK.unreadable);
+  }
+  if (
+    !Array.isArray(answers) ||
+    answers.length !== spec.parts.length ||
+    !answers.every((a) => typeof a === "string")
+  ) {
+    return wrong(FEEDBACK.unreadable);
+  }
+  const partMarks = marksForParts(spec.parts.length, marks, spec.marksPerPart);
+  const results = spec.parts.map((part, i) => check(part.spec, answers[i] as string, partMarks[i]));
+  const awarded = results.reduce((sum, r) => sum + r.marksAwarded, 0);
+  const rightParts = results.filter((r) => r.correct).length;
+  if (rightParts === results.length) return right(awarded);
+  return {
+    correct: false,
+    marksAwarded: awarded,
+    feedback: `${rightParts} of ${results.length} parts correct`,
+  };
 }

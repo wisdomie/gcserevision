@@ -134,6 +134,7 @@ export function parseFraction(s: string): ParsedFraction | null {
 
   const mixed =
     new RegExp(`^([+-]?)${INT} ${INT}/${INT}$`).exec(t) ??
+    new RegExp(`^([+-]?)${INT}\\s*\\\\frac(\\d)(\\d)$`).exec(t) ??
     new RegExp(`^([+-]?)${INT}\\s*\\\\frac\\{\\s*${INT}\\s*\\}\\{\\s*${INT}\\s*\\}$`).exec(t);
   if (mixed) {
     const whole = Number(mixed[2]);

@@ -13,10 +13,16 @@ const seededTopics = new Set(
 );
 
 describe("generator registry", () => {
-  it("has the Phase 1 non-expression generators", () => {
+  it("has all Phase 1 generators", () => {
     expect(all.map((g) => g.key).sort()).toEqual(
       [
+        "algebra.expand.double",
+        "algebra.expand.single",
+        "algebra.factorise.common",
+        "algebra.factorise.quadratic",
         "algebra.nth-term",
+        "algebra.rearrange",
+        "algebra.simplify",
         "algebra.solve.linear-two-step",
         "algebra.solve.quadratic",
         "algebra.solve.unknown-both-sides",
