@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { safeRedirectPath } from "@/lib/api/redirect";
 import { getMyProfile } from "@/lib/profile/server";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 
 export const metadata: Metadata = { title: "Set up your profile · Past Paper Game" };
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage({ searchParams }: PageProps<"/onboarding">) {
+  const { next } = await searchParams;
   const { userId, profile } = await getMyProfile();
   if (!userId) redirect("/login");
 
@@ -24,7 +26,7 @@ export default async function OnboardingPage() {
       </div>
       <ProfileForm
         submitLabel="Save and start"
-        afterSave="play"
+        afterSave={safeRedirectPath(typeof next === "string" ? next : null)}
         boards={(boards ?? []).map((b) => ({ slug: b.slug, name: b.name }))}
         initial={
           profile
