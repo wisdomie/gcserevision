@@ -5,19 +5,15 @@ import { useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { TopicPicker, toggleTopics } from "@/components/game/TopicPicker";
 import { SOLO_COUNTS } from "@/lib/game/solo";
-
-interface Group {
-  slug: string;
-  name: string;
-  topics: { slug: string; name: string }[];
-}
+import type { TopicGroup } from "@/lib/game/topic-groups";
 
 export function SoloSetupForm({
   groups,
   initialTopics,
 }: {
-  groups: Group[];
+  groups: TopicGroup[];
   initialTopics: string[];
 }) {
   const router = useRouter();
@@ -28,14 +24,7 @@ export function SoloSetupForm({
   const [starting, setStarting] = useState(false);
 
   const toggle = (slugs: string[], on: boolean) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      for (const s of slugs) {
-        if (on) next.add(s);
-        else next.delete(s);
-      }
-      return next;
-    });
+    setSelected((prev) => toggleTopics(prev, slugs, on));
 
   async function start() {
     setStarting(true);
@@ -64,41 +53,7 @@ export function SoloSetupForm({
     >
       {error && <Alert>{error}</Alert>}
 
-      {groups.map((group) => {
-        const slugs = group.topics.map((t) => t.slug);
-        const all = slugs.every((s) => selected.has(s));
-        return (
-          <Card key={group.slug}>
-            <fieldset className="flex flex-col gap-1">
-              <legend className="flex w-full items-center justify-between gap-2">
-                <span className="text-lg font-semibold">{group.name}</span>
-              </legend>
-              <label className="flex min-h-11 items-center gap-3 font-medium">
-                <input
-                  type="checkbox"
-                  className="size-5"
-                  checked={all}
-                  onChange={(e) => toggle(slugs, e.target.checked)}
-                />
-                All {group.name.split(",")[0].toLowerCase()} topics
-              </label>
-              <div className="grid gap-x-4 sm:grid-cols-2">
-                {group.topics.map((t) => (
-                  <label key={t.slug} className="flex min-h-11 items-center gap-3">
-                    <input
-                      type="checkbox"
-                      className="size-5"
-                      checked={selected.has(t.slug)}
-                      onChange={(e) => toggle([t.slug], e.target.checked)}
-                    />
-                    {t.name}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          </Card>
-        );
-      })}
+      <TopicPicker groups={groups} selected={selected} onToggle={toggle} />
 
       <Card className="flex flex-col gap-4">
         <fieldset>
