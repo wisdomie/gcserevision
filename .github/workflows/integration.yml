@@ -1,0 +1,66 @@
+name: Integration
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Start local Supabase (applies migrations and seed)
+        run: pnpm exec supabase start -x studio,imgproxy,vector,logflare,supavisor,edge-runtime,mailpit
+
+      - name: Rebuild database from scratch
+        run: pnpm exec supabase db reset
+
+      - name: Database tests (pgTAP)
+        run: pnpm exec supabase test db
+
+      - name: Generated types are up to date
+        run: |
+          pnpm db:types
+          git diff --exit-code -- src/types/database.ts
+
+      - name: Export Supabase env for the app
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+          test -n "$API_URL" && test -n "$ANON_KEY" && test -n "$SERVICE_ROLE_KEY"
+
+      - run: pnpm build
+      - run: pnpm check:bundle
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: E2E tests
+        run: pnpm test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+      - if: always()
+        run: pnpm exec supabase stop --no-backup
