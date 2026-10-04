@@ -32,11 +32,15 @@ insert into q
          t.id, t.subject_id
   from public.topics t where t.slug = 'hcf-lcm';
 
-create temp table ids (day uuid[]);
+-- Start from no challenges, whatever earlier runs left behind (rolled back at the end)
+delete from public.daily_challenges;
+
+create temp table ids (day uuid[], instances_before int);
 grant all on ids to authenticated;
 
 -- ---------------------------------------------------------------- create
-insert into ids select public.create_daily_challenge(public.daily_today(), (select subject_id from q), (select questions from q));
+insert into ids (day) select public.create_daily_challenge(public.daily_today(), (select subject_id from q), (select questions from q));
+update ids set instances_before = (select count(*)::int from public.question_instances);
 select is(cardinality((select day from ids)), 2, 'create_daily_challenge stores every question');
 select is((select count(*)::int from public.question_secrets where instance_id in (select unnest(day) from ids)), 2,
   'secrets are stored with the instances');
@@ -44,8 +48,8 @@ select is((select tier from public.question_instances where id = (select day[1] 
   'daily instances suit both tiers');
 select is(public.create_daily_challenge(public.daily_today(), (select subject_id from q), (select questions from q)),
   (select day from ids), 'a second call returns the same day');
-select is((select count(*)::int from public.question_instances where generator_key in ('number.hcf', 'number.lcm')
-           and tier = 'both'), 2, 'a second call adds no instances');
+select is((select count(*)::int from public.question_instances), (select instances_before from ids),
+  'a second call adds no instances');
 select throws_ok($$select public.create_daily_challenge(public.daily_today() + 1, 1::smallint, '[]')$$,
   '22023', null, 'a day needs questions');
 
