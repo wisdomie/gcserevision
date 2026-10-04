@@ -613,9 +613,9 @@ Each milestone ends with: tests passing, checklist ticked here, and a commit.
 **Done when:** a new user can sign up, choose AQA Higher, play a 10-question Algebra session, and see correct marking and solutions on a phone-sized screen.
 
 ### M3: Maths input and expression checking
-- [ ] `<MathInput>` with MathLive and a text-input toggle
-- [ ] `expression`, `solutions`, `standardForm`, `ratio` and `multi` checkers with tests, including the form constraints
-- [ ] Add expression-answer generators (expand, factorise, simplify, rearrange)
+- [x] `<MathInput>` with MathLive and a text-input toggle
+- [x] `expression`, `solutions`, `standardForm`, `ratio` and `multi` checkers with tests, including the form constraints
+- [x] Add expression-answer generators (expand, factorise, simplify, rearrange)
 
 **Done when:** the checker test table passes in full and typing `2x+4`, `4+2x` and `2(x+2)` behaves as specified.
 
