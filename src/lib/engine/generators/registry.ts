@@ -1,22 +1,66 @@
 import type { BoardSlug, CalcMode, QuestionGenerator, Tier } from "../types";
+import { nthTerm } from "./algebra/nth-term";
+import { solveLinearTwoStep, solveUnknownBothSides } from "./algebra/solve-linear";
+import { solveQuadratic } from "./algebra/solve-quadratic";
+import { substitute } from "./algebra/substitute";
+import { estimate } from "./number/estimate";
 import { fractionsAdd } from "./number/fractions-add";
+import { fractionsDivide } from "./number/fractions-divide";
 import { fractionsMultiply } from "./number/fractions-multiply";
+import { fractionsOfAmount } from "./number/fractions-of-amount";
 import { highestCommonFactor } from "./number/hcf";
+import { indexLaws } from "./number/indices";
 import { lowestCommonMultiple } from "./number/lcm";
 import { percentChange } from "./number/percent-change";
 import { percentOf } from "./number/percent-of";
+import { percentReverse } from "./number/percent-reverse";
+import { primeFactorDecomposition } from "./number/prime-factors";
 import { roundDecimalPlaces } from "./number/round-dp";
 import { roundSignificantFigures } from "./number/round-sf";
+import { standardFormCalc } from "./number/standard-form-calc";
+import { standardFormConvert } from "./number/standard-form-convert";
+import { probabilitySingleEvent } from "./probability/single-event";
+import { probabilityTwoEventsAnd } from "./probability/two-events";
+import { ratioShare } from "./ratio/share";
+import { ratioSimplify } from "./ratio/simplify";
+import { speedDistanceTime } from "./ratio/speed-distance-time";
+import { mean, meanFromTotal, medianRange } from "./statistics/averages";
 
 const ALL: readonly QuestionGenerator[] = [
+  // Number
   fractionsAdd,
   fractionsMultiply,
+  fractionsDivide,
+  fractionsOfAmount,
   percentOf,
   percentChange,
-  roundDecimalPlaces,
-  roundSignificantFigures,
+  percentReverse,
   highestCommonFactor,
   lowestCommonMultiple,
+  primeFactorDecomposition,
+  roundDecimalPlaces,
+  roundSignificantFigures,
+  estimate,
+  indexLaws,
+  standardFormConvert,
+  standardFormCalc,
+  // Algebra
+  solveLinearTwoStep,
+  solveUnknownBothSides,
+  solveQuadratic,
+  substitute,
+  nthTerm,
+  // Ratio
+  ratioShare,
+  ratioSimplify,
+  speedDistanceTime,
+  // Probability
+  probabilitySingleEvent,
+  probabilityTwoEventsAnd,
+  // Statistics
+  mean,
+  medianRange,
+  meanFromTotal,
 ];
 
 const BY_KEY = new Map<string, QuestionGenerator>();

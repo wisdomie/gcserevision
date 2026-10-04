@@ -15,7 +15,12 @@ import {
 const SEEDS = Array.from({ length: 500 }, (_, i) => i + 1);
 
 /** Generators whose answers may legitimately be negative. */
-const NEGATIVE_ANSWERS_OK = new Set<string>();
+const NEGATIVE_ANSWERS_OK = new Set<string>([
+  "algebra.solve.linear-two-step",
+  "algebra.solve.unknown-both-sides",
+  "algebra.solve.quadratic",
+  "algebra.substitute",
+]);
 
 const BAD_TEXT = [
   /NaN/,
@@ -24,6 +29,7 @@ const BAD_TEXT = [
   /\bnull\b/,
   /\[object Object\]/,
   /(^|[^\d.])-0(?![\d.])/,
+  /,;/, // a LaTeX "\;" that lost its backslash
 ];
 
 function texts(q: GeneratedQuestion): string[] {
