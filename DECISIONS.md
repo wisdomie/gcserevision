@@ -107,3 +107,41 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
 - **Docker in the cloud sandbox:** `dockerd` can be started by hand and Docker Hub pulls
   worked on a later attempt, so the full local stack can run there when the rate limit
   allows (see CLAUDE.md).
+
+## M3
+
+- **Own expression parser instead of Compute Engine or mathjs.** The form checks (expanded,
+  factorised, simplified) need the structure exactly as the player wrote it, and library
+  parsers canonicalise (reorder or distribute) or read implicit multiplication differently.
+  `src/lib/engine/answers/expression.ts` is a small recursive-descent parser for typed text
+  and MathLive LaTeX (`\frac`, `\left(`, `\cdot`, `^{}`, `\sqrt`, `\pi`, Greek letters).
+- **Equivalence is numeric**, as PLAN.md 6.3 says: both expressions must agree (relative
+  tolerance 1e-9) at 8 random points from a fixed seed, skipping points where either is
+  undefined.
+- **Form rules** (best effort, documented in `expression.ts`):
+  - expanded = no product, power or negation of a sum, and like terms collected (GCSE
+    "expand and simplify");
+  - factorised = top level is a product (or a power of a bracket), and no bracket has a
+    common factor left in it;
+  - simplified = like terms collected, at most one number and one power of each letter per
+    term.
+- **A leading "x =" is accepted** on expression answers, so "make x the subject" can be
+  answered as `x = (y-2)/3`.
+- **Multi-part answers arrive as a JSON array of strings.** Marks are split by
+  `marksPerPart`, or as evenly as possible. No generator uses `multi` yet, so its UI comes
+  with the first one.
+- **MathLive set-up:**
+  - It's used for `expression` and `fraction` answers; numeric answers keep a plain box.
+    There's a visible toggle to a plain text box, and the choice is remembered (localStorage).
+  - Fonts come from the KaTeX stylesheet (`fontsDirectory = null`), and there are no sounds.
+  - `mathModeSpace` is a thin space, so "1 1/2" stays a mixed number instead of becoming
+    11/2. A browser probe found this; the real MathLive outputs are pinned in
+    `tests/engine/expression.test.ts`.
+- **MathLive timing fixes found by repeated E2E runs:**
+  - options are set on MathLive's `mount` event, and the field is hidden until then;
+  - typing is never echoed back into the field;
+  - Enter submits the field's live value rather than possibly stale React state.
+    One remaining quirk is MathLive's, not ours: clicking an already focused field and typing
+    within milliseconds drops the first key. Tests rely on the auto-focus instead.
+- **Follow-up:** a GCSE-specific on-screen keyboard layout. The default layout includes keys
+  GCSE students don't need (∀, i, integrals).
