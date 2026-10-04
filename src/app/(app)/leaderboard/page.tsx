@@ -78,10 +78,13 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/lead
         ) : (
           <p className="text-muted">
             {scope === "friends"
-              ? "Your friends are people you've played live rooms with. Live rooms are coming soon!"
+              ? "Your friends are people you've played a live room or duel with. Start one and invite them!"
               : "Nobody has earned XP this week yet. Be the first!"}{" "}
-            <Link href="/play/solo" className="text-accent font-medium underline">
-              Start practising
+            <Link
+              href={scope === "friends" ? "/rooms/new" : "/play/solo"}
+              className="text-accent font-medium underline"
+            >
+              {scope === "friends" ? "Create a room" : "Start practising"}
             </Link>
           </p>
         )}

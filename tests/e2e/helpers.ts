@@ -63,7 +63,7 @@ export async function setHiddenAnswer(instanceId: string, answerSpec: object, fi
 }
 
 /** Use the plain text answer box (the choice is remembered in localStorage). */
-export async function usePlainTextBox(page: Page) {
+export async function switchToPlainTextBox(page: Page) {
   const toggle = page.getByRole("button", { name: "Use a plain text box instead" });
   if (await toggle.isVisible()) await toggle.click();
 }
@@ -99,4 +99,27 @@ export async function playSessionViaApi(
     current = result.next;
   }
   return score;
+}
+
+/** Answers the question on screen (a solo or live-room question card), right or wrong. */
+export async function answerOnScreen(page: Page, right: boolean) {
+  const card = page.locator("[data-instance-id]");
+  const instanceId = (await card.getAttribute("data-instance-id"))!;
+  const { mcqIndex, text } = await correctAnswerFor(instanceId);
+  if (mcqIndex !== undefined) {
+    const radios = card.getByRole("radio");
+    const count = await radios.count();
+    await radios.nth(right ? mcqIndex : (mcqIndex + 1) % count).check();
+  } else {
+    // Typed answers go in the plain text box (the maths keyboard has its own test)
+    await switchToPlainTextBox(page);
+    await page.getByRole("textbox", { name: "Your answer" }).fill(right ? text! : "999999");
+  }
+}
+
+/** The raw answer to send through the API, right or wrong. */
+export async function rawAnswerFor(instanceId: string, right: boolean): Promise<string> {
+  const { mcqIndex, text } = await correctAnswerFor(instanceId);
+  if (mcqIndex !== undefined) return String(right ? mcqIndex : (mcqIndex + 1) % 4);
+  return right ? text! : "999999";
 }
