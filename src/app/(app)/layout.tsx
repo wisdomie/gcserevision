@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getMyProfile, isProfileComplete } from "@/lib/profile/server";
 
-export default async function PlayLayout({ children }: LayoutProps<"/play">) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { userId, profile } = await getMyProfile();
   if (!userId) redirect("/login");
   if (!isProfileComplete(profile)) redirect("/onboarding");
@@ -14,11 +14,20 @@ export default async function PlayLayout({ children }: LayoutProps<"/play">) {
           <Link href="/play" className="min-h-11 content-center font-bold whitespace-nowrap">
             Past Paper Game
           </Link>
-          <div className="flex items-center gap-2 text-sm">
+          <nav aria-label="Main" className="flex items-center gap-1 text-sm">
             <Link
-              href="/onboarding"
+              href="/leaderboard"
+              className="hover:bg-border/40 flex min-h-11 items-center rounded-xl px-2 font-medium"
+            >
+              <span aria-hidden="true" className="sm:mr-1">
+                🏆
+              </span>
+              <span className="sr-only sm:not-sr-only">Leaderboard</span>
+            </Link>
+            <Link
+              href="/profile"
               className="hover:bg-border/40 flex min-h-11 items-center gap-1 rounded-xl px-2"
-              aria-label={`Profile: ${profile.username}, ${profile.xp} XP`}
+              aria-label={`Your profile: ${profile.username}, ${profile.xp} XP`}
             >
               <span aria-hidden="true" className="text-xl">
                 {profile.avatar}
@@ -28,7 +37,7 @@ export default async function PlayLayout({ children }: LayoutProps<"/play">) {
               </span>
               <span className="text-muted whitespace-nowrap">{profile.xp} XP</span>
             </Link>
-          </div>
+          </nav>
         </div>
       </header>
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-6">

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getMyProfile } from "@/lib/profile/server";
 import { createClient } from "@/lib/supabase/server";
-import { OnboardingForm } from "./OnboardingForm";
+import { ProfileForm } from "@/components/profile/ProfileForm";
 
 export const metadata: Metadata = { title: "Set up your profile · Past Paper Game" };
 
@@ -22,7 +22,9 @@ export default async function OnboardingPage() {
           later.
         </p>
       </div>
-      <OnboardingForm
+      <ProfileForm
+        submitLabel="Save and start"
+        afterSave="play"
         boards={(boards ?? []).map((b) => ({ slug: b.slug, name: b.name }))}
         initial={
           profile
