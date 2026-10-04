@@ -301,13 +301,6 @@ describe("robustness", () => {
     expect(check(thousand, undefined as unknown as string).correct).toBe(false);
     expect(check(thousand, 5 as unknown as string).correct).toBe(false);
   });
-  it("reports kinds not implemented until M3", () => {
-    const pending: AnswerSpec[] = [
-      { kind: "expression", latex: "2x+4", variables: ["x"] },
-      { kind: "multi", parts: [{ label: "a", spec: { kind: "integer", value: 1 } }] },
-    ];
-    for (const spec of pending) no(spec, "1", FEEDBACK.unsupported);
-  });
   it("survives a spec that makes the checker throw", () => {
     const evil = {
       kind: "decimal",
