@@ -65,3 +65,45 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
   `number.round.dp`, `number.round.sf`, `number.hcf`, `number.lcm`. `number.percent.change`
   uses the seeded `percentage-change` topic (ratio strand).
 - **Coverage threshold.** Vitest fails below 90% coverage of `src/lib/engine` (PLAN.md 15.5).
+
+## M2
+
+- **`solutions`, `ratio` and `standardForm` checkers moved forward from M3.** The remaining
+  Phase 1 generators (equations, ratio, standard form) need them, and M2's done-criterion is
+  an Algebra session. `expression` and `multi` stay in M3, and so do the expression-answer
+  generators (simplify, expand, factorise, rearrange).
+- **29 generators in M2** (the Phase 1 list minus the 6 expression-answer ones, which M3 adds).
+  `number.prime-factors` and `algebra.nth-term` are multiple choice for now, with distractors
+  from common mistakes, since their answers are expressions.
+- **Probability answers accept unsimplified fractions** (`mustBeSimplest: false`), as GCSE
+  mark schemes do. Decimal probabilities are not accepted yet.
+- **Solo state lives in the database.** `solo_sessions.settings` stores the full plan
+  (generator key and seed per question), so a session can be resumed and reproduced. A new
+  server-only table, `solo_session_questions`, links each served instance to its slot and
+  records when it was served (for timed scoring).
+- **Two Postgres functions keep writes atomic:** `serve_solo_question` (instance + secret +
+  link) and `record_solo_answer` (answer + session score + best streak + `topic_stats` +
+  `xp`). Only the service role can execute them. The unique constraint on `answers` rejects
+  a second answer to the same question.
+- **Question selection** (PLAN.md 5.4): generators are filtered by tier, board and topic;
+  Higher sessions are weighted by difficulty and Foundation sessions are uniform; the same
+  generator is never served twice in a row when there's a choice. The hand-written
+  `questions` bank is empty until the M8 importer, so selection only uses generators for now.
+- **Solo timer: 60 seconds per question**, display only. The server measures time from
+  `served_at`. Late answers still count, at the minimum speed factor.
+- **Auth:** anonymous quick play (`signInAnonymously`) plus an email magic link via
+  `/auth/callback` (PKCE code exchange). Upgrading an anonymous account to email is M4.
+- **Profiles are written through RLS**, not the service role: `/api/profile` validates and
+  filters the username, then inserts or updates as the user. Usernames are unique
+  regardless of case.
+- **Profanity filter** is a short built-in list with leetspeak folding: substrings for longer
+  words, whole words only for short ones. It errs on the side of blocking (e.g. "Scunthorpe").
+- **Service-role code stays in route handlers.** Pages read the user's own data with the
+  user's client; solo state for the question loop comes from `GET /api/solo/[sessionId]`.
+  ESLint blocks importing `lib/supabase/admin` or `lib/game/*-server` from pages and
+  components.
+- **E2E tests look up hidden answers with the service-role key** (test code only), so they
+  can answer some questions correctly and check the marking end to end.
+- **Docker in the cloud sandbox:** `dockerd` can be started by hand and Docker Hub pulls
+  worked on a later attempt, so the full local stack can run there when the rate limit
+  allows (see CLAUDE.md).
