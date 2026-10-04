@@ -576,15 +576,18 @@ reveal(idx) --(idx+1 == count)--> finished
 Each milestone ends with: tests passing, checklist ticked here, and a commit.
 
 ### M0: Project setup
-- [ ] Connect the project folder to the GitHub repo (section 3.3): `git init` or clone, add `.gitignore`, commit `PLAN.md`, push `main`
+- [x] Connect the project folder to the GitHub repo (section 3.3): `git init` or clone, add `.gitignore`, commit `PLAN.md`, push `main`
 - [ ] Add `CLAUDE.md` (pointer to this plan plus run/test commands) and protect `main` (PRs plus passing CI required)
-- [ ] Initialise Next.js + TypeScript (strict) + Tailwind + ESLint + Prettier with pnpm
-- [ ] Add Vitest and Playwright config; GitHub Actions `ci.yml` and `integration.yml` (section 3.3)
+  - `CLAUDE.md` done. **User action:** protect `main` in GitHub settings (require PR + `CI` check).
+- [x] Initialise Next.js + TypeScript (strict) + Tailwind + ESLint + Prettier with pnpm
+- [x] Add Vitest and Playwright config; GitHub Actions `ci.yml` and `integration.yml` (section 3.3)
 - [ ] `supabase init`; local Supabase running; `.env.example`
-- [ ] Migrations for all tables in section 5.1, with RLS per section 5.2
-- [ ] `seed.sql`: the four exam boards, the `maths` subject (active), the topic taxonomy from section 7
-- [ ] Supabase clients (browser, server, service-role) in `src/lib/supabase/`
+  - `supabase init` and `.env.example` done. The full local stack can't pull images in the cloud sandbox; migrations, seed and RLS tests were verified on a standalone `supabase/postgres` container. Tick once `integration.yml` is green.
+- [x] Migrations for all tables in section 5.1, with RLS per section 5.2
+- [x] `seed.sql`: the four exam boards, the `maths` subject (active), the topic taxonomy from section 7
+- [x] Supabase clients (browser, server, service-role) in `src/lib/supabase/`
 - [ ] Deploy an empty app to Vercel
+  - **User action:** import the repo in Vercel and set the env vars from section 3.2.
 
 **Done when:** the repo is on GitHub with `main` protected, a fresh clone runs with the commands in `CLAUDE.md`, the app deploys, CI is green, and `supabase db reset` rebuilds the database with seed data.
 
