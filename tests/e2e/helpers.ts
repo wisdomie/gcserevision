@@ -67,3 +67,36 @@ export async function usePlainTextBox(page: Page) {
   const toggle = page.getByRole("button", { name: "Use a plain text box instead" });
   if (await toggle.isVisible()) await toggle.click();
 }
+
+/** Plays a whole solo session through the API, answering every question right or wrong. Returns the final score. */
+export async function playSessionViaApi(
+  page: Page,
+  topicSlug: string,
+  count: 5 | 10,
+  right: boolean,
+) {
+  const start = await page.request.post("/api/solo/start", {
+    data: { topicSlugs: [topicSlug], count, timed: false },
+  });
+  expect(start.status()).toBe(201);
+  const state = await start.json();
+  let current = state.current;
+  let score = 0;
+  while (current) {
+    const answer = await correctAnswerFor(current.question.instanceId);
+    const raw = right
+      ? answer.mcqIndex !== undefined
+        ? String(answer.mcqIndex)
+        : answer.text!
+      : "999999";
+    const res = await page.request.post("/api/solo/answer", {
+      data: { sessionId: state.sessionId, instanceId: current.question.instanceId, raw },
+    });
+    expect(res.status()).toBe(200);
+    const result = await res.json();
+    expect(result.correct).toBe(right);
+    score = result.score;
+    current = result.next;
+  }
+  return score;
+}
