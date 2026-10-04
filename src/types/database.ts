@@ -546,7 +546,7 @@ export type Database = {
           {
             foreignKeyName: "solo_session_questions_instance_id_fkey";
             columns: ["instance_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "question_instances";
             referencedColumns: ["id"];
           },
@@ -744,6 +744,10 @@ export type Database = {
       };
     };
     Functions: {
+      create_daily_challenge: {
+        Args: { p_date: string; p_questions: Json; p_subject_id: number };
+        Returns: string[];
+      };
       create_room: {
         Args: {
           p_code: string;
@@ -758,11 +762,27 @@ export type Database = {
         };
         Returns: string;
       };
+      daily_leaderboard: {
+        Args: { p_date?: string };
+        Returns: {
+          avatar: string;
+          correct: number;
+          id: string;
+          is_me: boolean;
+          points: number;
+          rank: number;
+          streak: number;
+          total: number;
+          username: string;
+        }[];
+      };
+      daily_today: { Args: Record<PropertyKey, never>; Returns: string };
       expire_idle_rooms: { Args: Record<PropertyKey, never>; Returns: number };
       finalize_question: { Args: { p_idx: number; p_room_id: string }; Returns: boolean };
       join_room: { Args: { p_room_id: string; p_user_id: string }; Returns: number };
       leaderboard_week_start: { Args: Record<PropertyKey, never>; Returns: string };
       leave_room: { Args: { p_room_id: string; p_user_id: string }; Returns: undefined };
+      my_daily_streak: { Args: Record<PropertyKey, never>; Returns: number };
       next_question: { Args: { p_idx: number; p_room_id: string }; Returns: boolean };
       played_with: {
         Args: Record<PropertyKey, never>;
@@ -817,6 +837,10 @@ export type Database = {
           p_tier: string;
           p_topic_id: number;
         };
+        Returns: string;
+      };
+      start_daily: {
+        Args: { p_date: string; p_settings: Json; p_user_id: string };
         Returns: string;
       };
       start_room: { Args: { p_room_id: string; p_user_id: string }; Returns: boolean };
