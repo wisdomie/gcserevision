@@ -41,12 +41,6 @@ export default async function PlayHub() {
           </Card>
         ))}
       </div>
-
-      <form action="/auth/signout" method="post">
-        <button type="submit" className="text-muted min-h-11 text-sm underline">
-          Sign out
-        </button>
-      </form>
     </>
   );
 }

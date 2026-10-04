@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnswerInput } from "@/components/game/AnswerInput";
 import { Timer } from "@/components/game/Timer";
@@ -50,6 +51,12 @@ export function SoloGame({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     if (view.kind === "feedback" || view.kind === "finished") headingRef.current?.focus();
   }, [view.kind]);
+
+  // XP in the header comes from the server: refresh it once the session ends
+  const router = useRouter();
+  useEffect(() => {
+    if (view.kind === "finished") router.refresh();
+  }, [view.kind, router]);
 
   async function submit(raw = answer) {
     if (view.kind !== "question" || !raw.trim() || submitting) return;

@@ -434,7 +434,7 @@ export type Database = {
           created_at: string;
           current_index: number;
           exam_board_id: number | null;
-          host_id: string;
+          host_id: string | null;
           id: string;
           mode: string;
           question_count: number;
@@ -451,7 +451,7 @@ export type Database = {
           created_at?: string;
           current_index?: number;
           exam_board_id?: number | null;
-          host_id: string;
+          host_id?: string | null;
           id?: string;
           mode: string;
           question_count?: number;
@@ -468,7 +468,7 @@ export type Database = {
           created_at?: string;
           current_index?: number;
           exam_board_id?: number | null;
-          host_id?: string;
+          host_id?: string | null;
           id?: string;
           mode?: string;
           question_count?: number;
@@ -732,6 +732,15 @@ export type Database = {
       };
     };
     Functions: {
+      leaderboard_week_start: { Args: Record<PropertyKey, never>; Returns: string };
+      played_with: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          avatar: string;
+          id: string;
+          username: string;
+        }[];
+      };
       record_solo_answer: {
         Args: {
           p_finish: boolean;
@@ -764,6 +773,17 @@ export type Database = {
           p_topic_id: number;
         };
         Returns: string;
+      };
+      weekly_leaderboard: {
+        Args: { p_limit?: number; p_scope?: string };
+        Returns: {
+          avatar: string;
+          id: string;
+          is_me: boolean;
+          points: number;
+          rank: number;
+          username: string;
+        }[];
       };
     };
     Enums: {

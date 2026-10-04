@@ -7,7 +7,8 @@ import { SoloSetupForm } from "./SoloSetupForm";
 
 export const metadata: Metadata = { title: "Solo practice · Past Paper Game" };
 
-export default async function SoloSetupPage() {
+export default async function SoloSetupPage({ searchParams }: PageProps<"/play/solo">) {
+  const { topics: requested } = await searchParams;
   const { profile } = await getMyProfile();
   const available = new Set(
     listGenerators({ tier: profile?.tier ?? undefined, board: profile?.board?.slug }).map(
@@ -37,7 +38,12 @@ export default async function SoloSetupPage() {
           Choose topics, or leave them all unticked for a mix of everything.
         </p>
       </div>
-      <SoloSetupForm groups={groups} />
+      <SoloSetupForm
+        groups={groups}
+        initialTopics={String(requested ?? "")
+          .split(",")
+          .filter((slug) => groups.some((g) => g.topics.some((t) => t.slug === slug)))}
+      />
     </>
   );
 }

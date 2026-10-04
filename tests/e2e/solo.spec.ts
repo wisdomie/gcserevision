@@ -50,5 +50,9 @@ test("AQA Higher player completes a 10-question Algebra session", async ({ page 
 
   await expect(page.getByRole("heading", { name: "Your results" })).toBeVisible();
   await expect(page.getByText("5 / 10", { exact: true })).toBeVisible();
+  // The header XP updates once the session ends
+  await expect(page.getByRole("link", { name: /Your profile/ })).not.toHaveAccessibleName(
+    /, 0 XP$/,
+  );
   await expectNoHorizontalScroll(page);
 });
