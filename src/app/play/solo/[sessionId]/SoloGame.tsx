@@ -51,8 +51,8 @@ export function SoloGame({ sessionId }: { sessionId: string }) {
     if (view.kind === "feedback" || view.kind === "finished") headingRef.current?.focus();
   }, [view.kind]);
 
-  async function submit() {
-    if (view.kind !== "question" || !answer.trim() || submitting) return;
+  async function submit(raw = answer) {
+    if (view.kind !== "question" || !raw.trim() || submitting) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -62,11 +62,12 @@ export function SoloGame({ sessionId }: { sessionId: string }) {
         body: JSON.stringify({
           sessionId,
           instanceId: view.current.question.instanceId,
-          raw: answer,
+          raw,
         }),
       });
       setState((s) => (s ? { ...s, score: result.score, answered: s.answered + 1 } : s));
-      setView({ kind: "feedback", current: view.current, answer, result });
+      setAnswer(raw);
+      setView({ kind: "feedback", current: view.current, answer: raw, result });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -142,6 +143,7 @@ export function SoloGame({ sessionId }: { sessionId: string }) {
             options={q.options}
             value={view.kind === "feedback" ? view.answer : answer}
             onChange={setAnswer}
+            onEnter={(raw) => void submit(raw)}
             disabled={view.kind === "feedback" || submitting}
           />
           {error && <Alert>{error}</Alert>}
