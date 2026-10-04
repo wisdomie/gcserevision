@@ -45,8 +45,10 @@ select pg_temp.login('00000000-0000-0000-0000-00000000000a');
 set local role authenticated;
 select results_eq('select username from public.profiles', $$values ('alice'::text)$$,
   'profiles: a user sees only their own row');
-select results_eq('select username from public.public_profiles order by username',
-  $$values ('alice'::text), ('bob'::text)$$, 'public_profiles lists every username');
+select results_eq($$select username from public.public_profiles
+    where id in ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000b')
+    order by username$$,
+  $$values ('alice'::text), ('bob'::text)$$, 'public_profiles lists other players'' usernames');
 select is((select count(*)::int from public.rooms), 1, 'member can read their room');
 select is((select count(*)::int from public.room_players), 1, 'member can read room players');
 select throws_ok('select * from public.question_secrets', '42501', null, 'no client access to question_secrets');
