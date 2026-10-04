@@ -52,3 +52,18 @@ export async function correctAnswerFor(
   if (spec.kind === "mcq") return { mcqIndex: spec.correctIndex };
   return { text: (data.solution as { final: string }).final };
 }
+
+/** Test-only: replace the hidden answer of a served question so the expected marking is known. */
+export async function setHiddenAnswer(instanceId: string, answerSpec: object, final: string) {
+  const { error } = await adminClient()
+    .from("question_secrets")
+    .update({ answer_spec: answerSpec, solution: { steps: ["(test)"], final } })
+    .eq("instance_id", instanceId);
+  if (error) throw error;
+}
+
+/** Use the plain text answer box (the choice is remembered in localStorage). */
+export async function usePlainTextBox(page: Page) {
+  const toggle = page.getByRole("button", { name: "Use a plain text box instead" });
+  if (await toggle.isVisible()) await toggle.click();
+}

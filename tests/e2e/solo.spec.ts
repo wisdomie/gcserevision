@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { correctAnswerFor, expectNoHorizontalScroll, signUp } from "./helpers";
+import { correctAnswerFor, expectNoHorizontalScroll, signUp, usePlainTextBox } from "./helpers";
 
 // PLAN.md M2 "done when": a new user signs up, chooses AQA Higher, plays a
 // 10-question Algebra session, and sees correct marking and solutions on a phone.
@@ -33,7 +33,9 @@ test("AQA Higher player completes a 10-question Algebra session", async ({ page 
       const count = await radios.count();
       await radios.nth(answerRight ? mcqIndex : (mcqIndex + 1) % count).check();
     } else {
-      await page.getByLabel("Your answer").fill(answerRight ? text! : "999999");
+      // Typed answers go in the plain text box (the maths keyboard has its own test)
+      await usePlainTextBox(page);
+      await page.getByRole("textbox", { name: "Your answer" }).fill(answerRight ? text! : "999999");
     }
     await page.getByRole("button", { name: "Check answer" }).click();
 
