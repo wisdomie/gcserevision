@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { createClient } from "@/lib/supabase/client";
 
-export function LoginForm() {
+/** `next`: a same-site path to continue to after onboarding (already checked). */
+export function LoginForm({ next }: { next: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState<"quick" | "email" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +23,7 @@ export function LoginForm() {
       setBusy(null);
       return;
     }
-    router.push("/onboarding");
+    router.push(next === "/play" ? "/onboarding" : `/onboarding?next=${encodeURIComponent(next)}`);
     router.refresh();
   }
 
@@ -32,7 +33,9 @@ export function LoginForm() {
     setError(null);
     const { error } = await createClient().auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/play` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      },
     });
     setBusy(null);
     if (error) setError("We couldn't send the link. Check the email address and try again.");

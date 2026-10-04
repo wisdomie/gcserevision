@@ -16,8 +16,8 @@ interface Props {
     tier: string | null;
   } | null;
   submitLabel: string;
-  /** "play": go to the hub after saving (onboarding). "stay": confirm in place (profile page). */
-  afterSave: "play" | "stay";
+  /** A path to go to after saving (onboarding), or "stay" to confirm in place (profile page). */
+  afterSave: string;
 }
 
 const field = "min-h-11 w-full rounded-xl border border-border bg-background px-3 text-base";
@@ -49,8 +49,8 @@ export function ProfileForm({ boards, initial, submitLabel, afterSave }: Props) 
       setSaving(false);
       return;
     }
-    if (afterSave === "play") {
-      router.push("/play");
+    if (afterSave !== "stay") {
+      router.push(afterSave);
     } else {
       setSaving(false);
       setSaved(true);

@@ -176,3 +176,52 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
 - **Privacy notice** is plain English for 14–16-year-olds and is linked from every page. It
   is not legal advice: before launch it needs the operator's name and contact details, and a
   review against the UK Children's Code.
+
+## M5
+
+- **Every room transition is a Postgres function** (`create_room`, `join_room`, `start_room`,
+  `record_room_answer`, `finalize_question`, `next_question`, `leave_room`,
+  `expire_idle_rooms`). Each locks the room row and checks the status and question index, so
+  repeated or simultaneous calls do nothing. Only the service role can run them.
+- **Any player moves the game on.** Each player's page calls `advance` when the timer runs
+  out and `next` when the reveal is over (with a little random spread), so a host who closes
+  their tab doesn't stall the game. The last player to answer closes the question straight
+  away from the answer route.
+- **Closing on time waits for the late-answer grace.** Answers count until 500 ms after the
+  deadline (PLAN.md 8), so `advance` only closes a question after that, using the app
+  server's clock.
+- **Reveal lasts 6 seconds** (`REVEAL_MS`); the database refuses to move on before 5, to allow
+  for clock differences between the app server and the database.
+- **"Locked in" uses `room_players.answered_idx`** (the last question a player answered)
+  through Postgres Changes, instead of a separate Broadcast message. It carries no hint of
+  correctness, and it means one subscription covers everything.
+- **Realtime plus polling.** Clients subscribe to `rooms` and `room_players` changes (RLS
+  limits them to members) and refetch `GET /api/rooms/[code]` on each change. They also
+  refetch every 3 seconds, so a missed realtime message can't leave a phone stuck.
+- **Server clock offset** comes from three calls to `GET /api/time`, keeping the one with the
+  shortest round trip. The `<Timer>` counts down to the server's `question_ends_at`.
+- **Nobody sees other players' typed answers.** The reveal shows each player's result and
+  points, and only your own answer text: free text from other players would be a way to
+  message each other (PLAN.md 11).
+- **The duel tie-break time counts closed questions only**, so the ranking can't leak who got
+  the open question right.
+- **A room needs 2 players to start.** A duel starts by itself when its second player joins.
+- **A leaving host hands over** to the player who joined next. An empty lobby is deleted; a
+  game in progress keeps its history.
+- **Room codes stay on finished rooms** until they go idle, so the podium page keeps working.
+  Joining is lobby-only, so a code can still only be used for one game. Idle rooms (3 hours)
+  lose their code and are closed by `expire_idle_rooms`, which runs each time a room is
+  created rather than on a schedule: no cron extension or extra service needed.
+- **Room settings:** mode (room or duel), the host's board or mixed boards, tier, topics,
+  5/10/15/20 questions and 20/30/45/60 seconds per question (the API allows 3–20 and
+  10–90 for tests).
+- **Signed-out room links** (`/rooms/CODE`) go to `/login?next=/rooms/CODE`; the `next` path
+  is carried through quick play and onboarding (checked with `safeRedirectPath`).
+- **XP and topic stats** from live rooms are added when each question closes, in the same
+  transaction as the scores.
+- Rate limiting of room creation and answers is left to M8 with the rest of the rate limiting.
+- **Friends leaderboard includes room-mates with 0 XP this week**, so the friends tab isn't
+  empty straight after a first game where nobody scored.
+- **Presence is a follow-up:** a player who leaves without pressing "Leave" still counts towards
+  "everyone answered", so their questions wait for the full timer. It's slower but never stuck.
+  Realtime Presence could drop them from the count (M8).

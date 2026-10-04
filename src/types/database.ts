@@ -351,6 +351,7 @@ export type Database = {
       };
       room_players: {
         Row: {
+          answered_idx: number;
           joined_at: string;
           room_id: string;
           score: number;
@@ -358,6 +359,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          answered_idx?: number;
           joined_at?: string;
           room_id: string;
           score?: number;
@@ -365,6 +367,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          answered_idx?: number;
           joined_at?: string;
           room_id?: string;
           score?: number;
@@ -430,16 +433,19 @@ export type Database = {
       };
       rooms: {
         Row: {
-          code: string;
+          code: string | null;
           created_at: string;
           current_index: number;
           exam_board_id: number | null;
           host_id: string | null;
           id: string;
+          last_activity_at: string;
+          max_players: number;
           mode: string;
           question_count: number;
           question_ends_at: string | null;
           question_started_at: string | null;
+          reveal_started_at: string | null;
           seconds_per_question: number;
           status: string;
           subject_id: number;
@@ -447,16 +453,19 @@ export type Database = {
           topic_ids: number[];
         };
         Insert: {
-          code: string;
+          code?: string | null;
           created_at?: string;
           current_index?: number;
           exam_board_id?: number | null;
           host_id?: string | null;
           id?: string;
+          last_activity_at?: string;
+          max_players?: number;
           mode: string;
           question_count?: number;
           question_ends_at?: string | null;
           question_started_at?: string | null;
+          reveal_started_at?: string | null;
           seconds_per_question?: number;
           status?: string;
           subject_id: number;
@@ -464,16 +473,19 @@ export type Database = {
           topic_ids?: number[];
         };
         Update: {
-          code?: string;
+          code?: string | null;
           created_at?: string;
           current_index?: number;
           exam_board_id?: number | null;
           host_id?: string | null;
           id?: string;
+          last_activity_at?: string;
+          max_players?: number;
           mode?: string;
           question_count?: number;
           question_ends_at?: string | null;
           question_started_at?: string | null;
+          reveal_started_at?: string | null;
           seconds_per_question?: number;
           status?: string;
           subject_id?: number;
@@ -732,7 +744,26 @@ export type Database = {
       };
     };
     Functions: {
+      create_room: {
+        Args: {
+          p_code: string;
+          p_exam_board_id: number;
+          p_host_id: string;
+          p_mode: string;
+          p_questions: Json;
+          p_seconds_per_question: number;
+          p_subject_id: number;
+          p_tier: string;
+          p_topic_ids: number[];
+        };
+        Returns: string;
+      };
+      expire_idle_rooms: { Args: Record<PropertyKey, never>; Returns: number };
+      finalize_question: { Args: { p_idx: number; p_room_id: string }; Returns: boolean };
+      join_room: { Args: { p_room_id: string; p_user_id: string }; Returns: number };
       leaderboard_week_start: { Args: Record<PropertyKey, never>; Returns: string };
+      leave_room: { Args: { p_room_id: string; p_user_id: string }; Returns: undefined };
+      next_question: { Args: { p_idx: number; p_room_id: string }; Returns: boolean };
       played_with: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -740,6 +771,20 @@ export type Database = {
           id: string;
           username: string;
         }[];
+      };
+      record_room_answer: {
+        Args: {
+          p_idx: number;
+          p_instance_id: string;
+          p_is_correct: boolean;
+          p_marks_awarded: number;
+          p_points: number;
+          p_raw_answer: string;
+          p_room_id: string;
+          p_time_ms: number;
+          p_user_id: string;
+        };
+        Returns: undefined;
       };
       record_solo_answer: {
         Args: {
@@ -774,6 +819,7 @@ export type Database = {
         };
         Returns: string;
       };
+      start_room: { Args: { p_room_id: string; p_user_id: string }; Returns: boolean };
       weekly_leaderboard: {
         Args: { p_limit?: number; p_scope?: string };
         Returns: {

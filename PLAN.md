@@ -627,13 +627,13 @@ Each milestone ends with: tests passing, checklist ticked here, and a commit.
 **Done when:** a user can see their strongest and weakest topics and delete their account and data.
 
 ### M5: Live rooms
-- [ ] Room creation, join by code, lobby with a live player list (Realtime)
-- [ ] Server clock offset and `<Timer>`
-- [ ] Question, reveal and finished states per the state machine in section 10
-- [ ] `answer`, `advance`, `next`, `reveal`, `leave` routes; `finalize_question` DB function
-- [ ] Live scoreboard updated at reveal, with podium on finish
-- [ ] Duel mode on top of the room code path
-- [ ] Integration and two-browser E2E tests
+- [x] Room creation, join by code, lobby with a live player list (Realtime)
+- [x] Server clock offset and `<Timer>`
+- [x] Question, reveal and finished states per the state machine in section 10
+- [x] `answer`, `advance`, `next`, `reveal`, `leave` routes; `finalize_question` DB function
+- [x] Live scoreboard updated at reveal, with podium on finish
+- [x] Duel mode on top of the room code path
+- [x] Integration and two-browser E2E tests
 
 **Done when:** 4 real phones can play a 10-question room with no desyncs, with a host who closes their tab mid-game not stalling it.
 

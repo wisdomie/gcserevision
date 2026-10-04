@@ -32,7 +32,7 @@ interface Topic {
   name: string;
 }
 
-async function loadSubjectAndTopics(admin: Admin) {
+export async function loadSubjectAndTopics(admin: Admin) {
   const { data: subject, error } = await admin
     .from("subjects")
     .select("id")

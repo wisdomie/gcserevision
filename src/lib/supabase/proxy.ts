@@ -4,14 +4,17 @@ import type { Database } from "@/types/database";
 
 /**
  * Refreshes the Supabase auth session on each request and writes any updated
- * auth cookies onto the response. Called from `src/proxy.ts`.
+ * auth cookies onto the response. Called from `src/proxy.ts`. Also says
+ * whether the request is signed in.
  */
-export async function updateSession(request: NextRequest) {
+export async function updateSession(
+  request: NextRequest,
+): Promise<{ response: NextResponse; signedIn: boolean }> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   // Without configuration (e.g. a preview build with no env) there is no
   // session to refresh, so let the request through.
-  if (!url || !anonKey) return NextResponse.next({ request });
+  if (!url || !anonKey) return { response: NextResponse.next({ request }), signedIn: false };
 
   let response = NextResponse.next({ request });
 
@@ -33,7 +36,7 @@ export async function updateSession(request: NextRequest) {
 
   // Do not run code between creating the client and this call: it validates
   // the JWT and triggers the token refresh.
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
 
-  return response;
+  return { response, signedIn: typeof data?.claims?.sub === "string" };
 }
