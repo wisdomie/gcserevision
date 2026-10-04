@@ -101,7 +101,7 @@ export interface Ranked extends Standing {
 }
 
 /** Highest score first; ties broken by less time on correct answers; then name for a stable order. */
-export function rankPlayers(standings: readonly Standing[]): Ranked[] {
+export function rankPlayers<T extends Standing>(standings: readonly T[]): (T & { rank: number })[] {
   const sorted = [...standings].sort(
     (a, b) => compareDuel(a, b) || a.username.localeCompare(b.username),
   );
