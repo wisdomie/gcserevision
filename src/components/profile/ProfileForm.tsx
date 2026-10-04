@@ -15,18 +15,23 @@ interface Props {
     board: string | null;
     tier: string | null;
   } | null;
+  submitLabel: string;
+  /** "play": go to the hub after saving (onboarding). "stay": confirm in place (profile page). */
+  afterSave: "play" | "stay";
 }
 
 const field = "min-h-11 w-full rounded-xl border border-border bg-background px-3 text-base";
 
-export function OnboardingForm({ boards, initial }: Props) {
+export function ProfileForm({ boards, initial, submitLabel, afterSave }: Props) {
   const router = useRouter();
   const [avatar, setAvatar] = useState(initial?.avatar ?? AVATARS[0]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   async function save(form: FormData) {
     setSaving(true);
+    setSaved(false);
     setError(null);
     const res = await fetch("/api/profile", {
       method: "POST",
@@ -44,13 +49,26 @@ export function OnboardingForm({ boards, initial }: Props) {
       setSaving(false);
       return;
     }
-    router.push("/play");
+    if (afterSave === "play") {
+      router.push("/play");
+    } else {
+      setSaving(false);
+      setSaved(true);
+    }
     router.refresh();
   }
 
   return (
     <form action={save} className="flex flex-col gap-6">
       {error && <Alert>{error}</Alert>}
+      {saved && (
+        <p
+          role="status"
+          className="border-success/40 bg-success/10 rounded-xl border px-4 py-3 text-sm"
+        >
+          <span aria-hidden="true">✅ </span>Saved
+        </p>
+      )}
 
       <div className="flex flex-col gap-2">
         <label htmlFor="username" className="font-medium">
@@ -150,7 +168,7 @@ export function OnboardingForm({ boards, initial }: Props) {
       </fieldset>
 
       <Button type="submit" disabled={saving}>
-        {saving ? "Saving…" : "Save and start"}
+        {saving ? "Saving…" : submitLabel}
       </Button>
     </form>
   );

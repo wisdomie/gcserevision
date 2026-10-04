@@ -13,9 +13,15 @@ interface Group {
   topics: { slug: string; name: string }[];
 }
 
-export function SoloSetupForm({ groups }: { groups: Group[] }) {
+export function SoloSetupForm({
+  groups,
+  initialTopics,
+}: {
+  groups: Group[];
+  initialTopics: string[];
+}) {
   const router = useRouter();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(initialTopics));
   const [count, setCount] = useState<number>(10);
   const [timed, setTimed] = useState(false);
   const [error, setError] = useState<string | null>(null);
