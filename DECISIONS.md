@@ -220,3 +220,8 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
 - **XP and topic stats** from live rooms are added when each question closes, in the same
   transaction as the scores.
 - Rate limiting of room creation and answers is left to M8 with the rest of the rate limiting.
+- **Friends leaderboard includes room-mates with 0 XP this week**, so the friends tab isn't
+  empty straight after a first game where nobody scored.
+- **Presence is a follow-up:** a player who leaves without pressing "Leave" still counts towards
+  "everyone answered", so their questions wait for the full timer. It's slower but never stuck.
+  Realtime Presence could drop them from the count (M8).
