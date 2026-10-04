@@ -620,9 +620,9 @@ Each milestone ends with: tests passing, checklist ticked here, and a commit.
 **Done when:** the checker test table passes in full and typing `2x+4`, `4+2x` and `2(x+2)` behaves as specified.
 
 ### M4: Accounts, profiles and leaderboards
-- [ ] `/profile` (edit board and tier), weak-topic view from `topic_stats`
-- [ ] Weekly XP leaderboard and a "people I've played with" friends list
-- [ ] Account deletion and the privacy page
+- [x] `/profile` (edit board and tier), weak-topic view from `topic_stats`
+- [x] Weekly XP leaderboard and a "people I've played with" friends list
+- [x] Account deletion and the privacy page
 
 **Done when:** a user can see their strongest and weakest topics and delete their account and data.
 
