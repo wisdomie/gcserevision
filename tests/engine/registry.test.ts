@@ -13,17 +13,38 @@ const seededTopics = new Set(
 );
 
 describe("generator registry", () => {
-  it("has the first 8 M1 generators", () => {
+  it("has the Phase 1 non-expression generators", () => {
     expect(all.map((g) => g.key).sort()).toEqual(
       [
+        "algebra.nth-term",
+        "algebra.solve.linear-two-step",
+        "algebra.solve.quadratic",
+        "algebra.solve.unknown-both-sides",
+        "algebra.substitute",
+        "number.estimate",
         "number.fractions.add",
+        "number.fractions.divide",
         "number.fractions.multiply",
+        "number.fractions.of-amount",
         "number.hcf",
+        "number.indices.laws",
         "number.lcm",
         "number.percent.change",
         "number.percent.of",
+        "number.percent.reverse",
+        "number.prime-factors",
         "number.round.dp",
         "number.round.sf",
+        "number.standard-form.calc",
+        "number.standard-form.convert",
+        "probability.single-event",
+        "probability.two-events-and",
+        "ratio.share",
+        "ratio.simplify",
+        "ratio.speed-distance-time",
+        "stats.mean",
+        "stats.mean-from-total",
+        "stats.median-range",
       ].sort(),
     );
   });
@@ -56,8 +77,11 @@ describe("generator registry", () => {
       ).toEqual(["number.hcf", "number.lcm"]);
       expect(listGenerators({ topicSlugs: [] })).toHaveLength(all.length);
     });
-    it("by tier", () => {
-      expect(listGenerators({ tier: "foundation" })).toHaveLength(all.length);
+    it("by tier: Higher-only generators are excluded for Foundation", () => {
+      const foundation = listGenerators({ tier: "foundation" }).map((g) => g.key);
+      expect(foundation).not.toContain("number.percent.reverse");
+      expect(foundation).not.toContain("algebra.solve.quadratic");
+      expect(listGenerators({ tier: "higher" })).toHaveLength(all.length);
     });
     it("by board, including mixed-board rooms", () => {
       expect(listGenerators({ board: "aqa" })).toHaveLength(all.length);
