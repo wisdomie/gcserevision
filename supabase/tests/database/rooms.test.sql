@@ -1,7 +1,7 @@
 -- Live room functions (M5). Run with `supabase test db`.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(35);
+select plan(36);
 
 -- Players: host (c1), guest (c2), outsider (c3)
 insert into auth.users (id, aud, role) values
@@ -112,6 +112,11 @@ select is((select code from public.rooms where id = (select room_id from t)), nu
 set local role authenticated;
 select throws_ok($$select public.finalize_question((select room_id from t), 0::smallint)$$, '42501', null,
   'clients cannot call room functions');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', true);
+select set_config('request.jwt.claims', '{"sub": "00000000-0000-0000-0000-0000000000c1", "role": "authenticated"}', true);
+select results_eq($$select username, points from public.weekly_leaderboard('friends', 100) order by points desc$$,
+  $$values ('room_host'::text, 900::bigint), ('room_guest'::text, 0::bigint)$$,
+  'friends include room-mates with no XP yet');
 reset role;
 
 select * from finish();
