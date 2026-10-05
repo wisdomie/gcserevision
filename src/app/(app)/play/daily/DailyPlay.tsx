@@ -1,12 +1,17 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { dailyShareText, formatDailyDate } from "@/lib/game/daily";
 import type { DailyOverview } from "@/lib/game/daily-types";
-import { SoloGame } from "../solo/[sessionId]/SoloGame";
+
+// The question player (maths keyboard and all) only loads once an attempt starts
+const SoloGame = dynamic(() => import("../solo/[sessionId]/SoloGame").then((m) => m.SoloGame), {
+  loading: () => <p role="status">Loading your questions…</p>,
+});
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
