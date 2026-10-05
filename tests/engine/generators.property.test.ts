@@ -1,6 +1,7 @@
 // Property tests for every registered generator (PLAN.md 6.4 and 12.2).
 import { describe, expect, it } from "vitest";
 import { check } from "@/lib/engine/answers/check";
+import { DiagramSchema, type Diagram } from "@/lib/engine/diagram";
 import { normalise } from "@/lib/engine/answers/normalise";
 import { listGenerators } from "@/lib/engine/generators/registry";
 import { createRng } from "@/lib/engine/rng";
@@ -20,6 +21,7 @@ const NEGATIVE_ANSWERS_OK = new Set<string>([
   "algebra.solve.unknown-both-sides",
   "algebra.solve.quadratic",
   "algebra.substitute",
+  "algebra.straight-line.gradient",
 ]);
 
 const BAD_TEXT = [
@@ -32,8 +34,25 @@ const BAD_TEXT = [
   /,;/, // a LaTeX "\;" that lost its backslash
 ];
 
+function diagramTexts(d: Diagram): string[] {
+  switch (d.kind) {
+    case "geometry":
+      return [d.alt, ...d.labels.map((l) => l.text)];
+    case "graph":
+      return [d.alt, d.x.label ?? "", d.y.label ?? "", ...d.lines.map((l) => l.label ?? "")];
+    case "bar":
+      return [d.alt, ...d.categories, d.xLabel ?? "", d.y.label ?? ""];
+  }
+}
+
 function texts(q: GeneratedQuestion): string[] {
-  return [q.promptMd, ...q.solution.steps, q.solution.final, ...(q.options ?? [])];
+  return [
+    q.promptMd,
+    ...q.solution.steps,
+    q.solution.final,
+    ...(q.options ?? []),
+    ...(q.diagram ? diagramTexts(q.diagram) : []),
+  ];
 }
 
 /** Every number an answer spec contains. */
@@ -134,8 +153,31 @@ describe.each(listGenerators({ includeDiagrams: true }).map((g) => [g.key, g] as
       }
     });
 
+    it(gen.needsDiagram ? "has a valid diagram" : "has no diagram", () => {
+      for (const { seed, q } of questions) {
+        if (!gen.needsDiagram) {
+          expect(q.diagram, `seed ${seed}`).toBeUndefined();
+          continue;
+        }
+        const parsed = DiagramSchema.safeParse(q.diagram);
+        expect(parsed.success, `seed ${seed}: ${parsed.error?.message}`).toBe(true);
+        if (q.diagram?.kind === "geometry" && q.promptMd.includes("marked")) {
+          // The unknown is marked, and no label is the answer itself
+          expect(
+            q.diagram.labels.some((l) => l.text === "x"),
+            `seed ${seed}`,
+          ).toBe(true);
+          const final = q.solution.final.replace(/\s.*$/, "");
+          for (const l of q.diagram.labels)
+            expect(l.text.replace(/\s.*$/, ""), `seed ${seed}`).not.toBe(final);
+        }
+      }
+    });
+
     it("varies across seeds", () => {
-      const prompts = new Set(questions.map(({ q }) => q.promptMd));
+      const prompts = new Set(
+        questions.map(({ q }) => q.promptMd + JSON.stringify(q.diagram ?? null)),
+      );
       expect(prompts.size).toBeGreaterThan(SEEDS.length / 10);
     });
   },
