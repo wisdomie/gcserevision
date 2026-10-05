@@ -6,7 +6,12 @@ import { rearrange } from "./algebra/rearrange";
 import { simplifyExpression } from "./algebra/simplify";
 import { solveLinearTwoStep, solveUnknownBothSides } from "./algebra/solve-linear";
 import { solveQuadratic } from "./algebra/solve-quadratic";
+import { straightLineGraph } from "./algebra/straight-line";
 import { substitute } from "./algebra/substitute";
+import { missingAngle } from "./geometry/angles";
+import { areaOfShapes } from "./geometry/area";
+import { pythagorasHypotenuse, pythagorasShorterSide } from "./geometry/pythagoras";
+import { trigMissingAngle, trigMissingSide } from "./geometry/trigonometry";
 import { estimate } from "./number/estimate";
 import { fractionsAdd } from "./number/fractions-add";
 import { fractionsDivide } from "./number/fractions-divide";
@@ -29,6 +34,7 @@ import { ratioShare } from "./ratio/share";
 import { ratioSimplify } from "./ratio/simplify";
 import { speedDistanceTime } from "./ratio/speed-distance-time";
 import { mean, meanFromTotal, medianRange } from "./statistics/averages";
+import { barChart, scatterCorrelation } from "./statistics/charts";
 
 const ALL: readonly QuestionGenerator[] = [
   // Number
@@ -60,10 +66,18 @@ const ALL: readonly QuestionGenerator[] = [
   solveQuadratic,
   substitute,
   nthTerm,
+  straightLineGraph,
   // Ratio
   ratioShare,
   ratioSimplify,
   speedDistanceTime,
+  // Geometry
+  missingAngle,
+  areaOfShapes,
+  pythagorasHypotenuse,
+  pythagorasShorterSide,
+  trigMissingSide,
+  trigMissingAngle,
   // Probability
   probabilitySingleEvent,
   probabilityTwoEventsAnd,
@@ -71,6 +85,8 @@ const ALL: readonly QuestionGenerator[] = [
   mean,
   medianRange,
   meanFromTotal,
+  barChart,
+  scatterCorrelation,
 ];
 
 const BY_KEY = new Map<string, QuestionGenerator>();
@@ -90,6 +106,7 @@ export interface GeneratorFilter {
   topicSlugs?: readonly string[];
   /** The session's calculator rule: 'non-calc' excludes calculator-only generators. */
   calculator?: Exclude<CalcMode, "either">;
+  /** Set false to leave out questions that need a diagram (all are included by default). */
   includeDiagrams?: boolean;
 }
 
@@ -116,7 +133,7 @@ export function filterGenerators(
     if (filter.topicSlugs && filter.topicSlugs.length && !filter.topicSlugs.includes(g.topicSlug))
       return false;
     if (filter.calculator === "non-calc" && g.calculator === "calc") return false;
-    if (!filter.includeDiagrams && g.needsDiagram) return false;
+    if (filter.includeDiagrams === false && g.needsDiagram) return false;
     return true;
   });
 }

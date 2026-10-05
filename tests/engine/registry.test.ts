@@ -13,7 +13,7 @@ const seededTopics = new Set(
 );
 
 describe("generator registry", () => {
-  it("has all Phase 1 generators", () => {
+  it("has all generators", () => {
     expect(all.map((g) => g.key).sort()).toEqual(
       [
         "algebra.expand.double",
@@ -26,7 +26,14 @@ describe("generator registry", () => {
         "algebra.solve.linear-two-step",
         "algebra.solve.quadratic",
         "algebra.solve.unknown-both-sides",
+        "algebra.straight-line.gradient",
         "algebra.substitute",
+        "geometry.angles.missing",
+        "geometry.area.shapes",
+        "geometry.pythagoras.hypotenuse",
+        "geometry.pythagoras.shorter-side",
+        "geometry.trig.angle",
+        "geometry.trig.side",
         "number.estimate",
         "number.fractions.add",
         "number.fractions.divide",
@@ -48,9 +55,11 @@ describe("generator registry", () => {
         "ratio.share",
         "ratio.simplify",
         "ratio.speed-distance-time",
+        "stats.bar-chart",
         "stats.mean",
         "stats.mean-from-total",
         "stats.median-range",
+        "stats.scatter.correlation",
       ].sort(),
     );
   });
@@ -94,7 +103,11 @@ describe("generator registry", () => {
       expect(listGenerators({ board: null })).toHaveLength(all.length);
     });
     it("by calculator rule", () => {
-      expect(listGenerators({ calculator: "non-calc" })).toHaveLength(all.length);
+      const calcOnly = all.filter((g) => g.calculator === "calc").map((g) => g.key);
+      expect(calcOnly.length).toBeGreaterThan(0);
+      const nonCalc = listGenerators({ calculator: "non-calc" }).map((g) => g.key);
+      expect(nonCalc).toHaveLength(all.length - calcOnly.length);
+      for (const key of calcOnly) expect(nonCalc).not.toContain(key);
       expect(listGenerators({ calculator: "calc" })).toHaveLength(all.length);
     });
   });
@@ -137,10 +150,10 @@ describe("generator registry", () => {
       expect(keys({ calculator: "non-calc" })).not.toContain("calc");
       expect(keys({ calculator: "calc" })).toContain("calc");
     });
-    it("leaves out diagram questions unless asked", () => {
-      expect(keys({})).not.toContain("diagram");
-      expect(keys({ includeDiagrams: true })).toContain("diagram");
-      expect(keys({ includeDiagrams: true, topicSlugs: ["angles"] })).toEqual(["diagram"]);
+    it("includes diagram questions unless told not to", () => {
+      expect(keys({})).toContain("diagram");
+      expect(keys({ topicSlugs: ["angles"] })).toEqual(["diagram"]);
+      expect(keys({ includeDiagrams: false })).not.toContain("diagram");
     });
   });
 });
