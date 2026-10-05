@@ -19,7 +19,8 @@
     "db:reset": "supabase db reset",
     "check:bundle": "node scripts/check-client-bundle.mjs",
     "db:types": "supabase gen types typescript --local --schema public > src/types/database.ts && prettier --write src/types/database.ts",
-    "db:test": "supabase test db"
+    "db:test": "supabase test db",
+    "import:questions": "tsx scripts/import-questions.ts"
   },
   "dependencies": {
     "@sentry/nextjs": "^11.4.0",
@@ -47,6 +48,7 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "supabase": "^2.119.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.3"
   },
