@@ -9,6 +9,7 @@ import { clockOffset, type ClockSample } from "@/lib/game/clock";
 import type { RoomReveal, RoomState } from "@/lib/game/room-types";
 import { createClient } from "@/lib/supabase/client";
 import { Finished, Lobby, QuestionView, RevealView } from "./RoomViews";
+import { playSound } from "@/lib/sound";
 
 class HttpError extends Error {
   constructor(
@@ -95,6 +96,7 @@ export function RoomGame({ code }: { code: string }) {
   const roomId = room?.roomId;
   const status = room?.status;
   const index = room?.currentIndex ?? -1;
+  const me = room?.me;
 
   useEffect(() => {
     void refresh();
@@ -158,8 +160,16 @@ export function RoomGame({ code }: { code: string }) {
   useEffect(() => {
     if ((status !== "reveal" && status !== "finished") || index < 0) return;
     if (reveal?.index === index) return;
-    api<RoomReveal>(`${base}/reveal?idx=${index}`).then(setReveal, () => {});
-  }, [status, index, reveal?.index, base]);
+    api<RoomReveal>(`${base}/reveal?idx=${index}`).then(
+      (r) => {
+        setReveal(r);
+        const mine = r.results.find((x) => x.userId === me);
+        if (status === "reveal" && mine?.answered)
+          playSound(mine.correct ? "correct" : mine.points > 0 ? "partial" : "wrong");
+      },
+      () => {},
+    );
+  }, [status, index, reveal?.index, base, me]);
 
   const step = `${load.kind}:${status}:${index}`;
   const shownError = error?.step === step ? error.message : null;

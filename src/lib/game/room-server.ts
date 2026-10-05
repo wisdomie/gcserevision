@@ -22,6 +22,8 @@ import {
 } from "./room";
 import type { RevealResult, RoomReveal, RoomState } from "./room-types";
 import { planSoloSession, publicPayload, type PublicPayload } from "./solo";
+import { planWithBank } from "./bank";
+import { loadBankGenerators } from "./bank-server";
 import { loadSubjectAndTopics } from "./solo-server";
 
 type Admin = ReturnType<typeof createAdminClient>;
@@ -112,17 +114,21 @@ export async function createRoom(
     boardId = board.id;
   }
 
-  const generators = listGenerators({
-    tier: settings.tier,
-    board: settings.board,
-    topicSlugs: settings.topicSlugs,
-  }).filter((g) => topics.has(g.topicSlug));
-  if (generators.length === 0)
+  const filter = { tier: settings.tier, board: settings.board, topicSlugs: settings.topicSlugs };
+  const generators = listGenerators(filter).filter((g) => topics.has(g.topicSlug));
+  const bank = (await loadBankGenerators(admin, filter)).filter((g) => topics.has(g.topicSlug));
+  if (generators.length + bank.length === 0)
     throw new ApiError(400, "There are no questions for those settings yet.");
 
-  const plan = planSoloSession(generators, settings.questionCount, settings.tier, randomSeed());
+  const bankByKey = new Map(bank.map((g) => [g.key, g]));
+  const plan = planWithBank(
+    (pool, s) => planSoloSession(pool, settings.questionCount, settings.tier, s),
+    generators,
+    bank,
+    randomSeed(),
+  );
   const questions = plan.map(({ key, seed }) => {
-    const gen = getGenerator(key)!;
+    const gen = getGenerator(key) ?? bankByKey.get(key)!;
     const topic = topics.get(gen.topicSlug)!;
     const q = gen.generate(createRng(seed));
     return {

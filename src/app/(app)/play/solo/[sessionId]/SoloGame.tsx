@@ -9,6 +9,7 @@ import { MathInline, MathText } from "@/components/math/MathText";
 import { Alert } from "@/components/ui/Alert";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { playSound } from "@/lib/sound";
 import type {
   SoloAnswerResult,
   SoloCurrentQuestion,
@@ -84,6 +85,7 @@ export function SoloGame({
           raw,
         }),
       });
+      playSound(result.correct ? "correct" : result.marksAwarded > 0 ? "partial" : "wrong");
       setState((s) => (s ? { ...s, score: result.score, answered: s.answered + 1 } : s));
       setAnswer(raw);
       setView({ kind: "feedback", current: view.current, answer: raw, result });
@@ -99,7 +101,10 @@ export function SoloGame({
     setAnswer("");
     setError(null);
     if (view.result.next) setView({ kind: "question", current: view.result.next });
-    else if (view.result.summary) setView({ kind: "finished", summary: view.result.summary });
+    else if (view.result.summary) {
+      playSound("finish");
+      setView({ kind: "finished", summary: view.result.summary });
+    }
   };
 
   if (view.kind === "loading") return <p role="status">Loading your questions…</p>;
@@ -194,7 +199,7 @@ function Feedback({
 }) {
   return (
     <Card
-      className={`flex flex-col gap-3 border-2 ${result.correct ? "border-success" : "border-danger"}`}
+      className={`motion-safe:animate-pop-in flex flex-col gap-3 border-2 ${result.correct ? "border-success" : "border-danger"}`}
     >
       <h2
         ref={headingRef}
@@ -247,7 +252,7 @@ function Results({
         : "Every question you try helps. Have a look at the topics below.";
   return (
     <div className="flex flex-col gap-4">
-      <Card className="flex flex-col gap-2 text-center">
+      <Card className="motion-safe:animate-pop-in flex flex-col gap-2 text-center">
         <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold focus:outline-none">
           Your results
         </h1>

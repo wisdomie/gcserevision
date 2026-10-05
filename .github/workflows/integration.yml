@@ -48,6 +48,9 @@ jobs:
           } >> "$GITHUB_ENV"
           test -n "$API_URL" && test -n "$ANON_KEY" && test -n "$SERVICE_ROLE_KEY"
 
+      - name: Load the question bank
+        run: pnpm import:questions
+
       - run: pnpm build
       - run: pnpm check:bundle
 

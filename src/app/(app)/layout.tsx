@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { SoundToggle } from "@/components/SoundToggle";
 import { getMyProfile, isProfileComplete } from "@/lib/profile/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -11,10 +12,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex flex-1 flex-col">
       <header className="border-border bg-surface border-b">
         <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3 px-4 py-2">
-          <Link href="/play" className="min-h-11 content-center font-bold whitespace-nowrap">
-            Past Paper Game
+          <Link
+            href="/play"
+            aria-label="Past Paper Game: home"
+            className="min-h-11 content-center font-bold whitespace-nowrap"
+          >
+            {/* A shorter name on narrow phones leaves room for the buttons */}
+            <span className="sm:hidden">Paper Game</span>
+            <span className="hidden sm:inline">Past Paper Game</span>
           </Link>
-          <nav aria-label="Main" className="flex items-center gap-1 text-sm">
+          <nav aria-label="Main" className="flex shrink-0 items-center gap-1 text-sm">
+            <SoundToggle />
             <Link
               href="/leaderboard"
               className="hover:bg-border/40 flex min-h-11 items-center rounded-xl px-2 font-medium"

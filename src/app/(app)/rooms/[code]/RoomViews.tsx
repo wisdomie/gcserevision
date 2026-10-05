@@ -9,6 +9,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { PublicQuestion } from "@/lib/engine/types";
 import type { RoomPlayer, RoomReveal, RoomState } from "@/lib/game/room-types";
+import { playSound } from "@/lib/sound";
 
 function Avatar({ avatar }: { avatar: string | null }) {
   return (
@@ -262,7 +263,7 @@ export function RevealView({ room, reveal }: { room: RoomState; reveal: RoomReve
         </Card>
       )}
       <Card
-        className={`flex flex-col gap-3 border-2 ${mine?.correct ? "border-success" : "border-danger"}`}
+        className={`motion-safe:animate-pop-in flex flex-col gap-3 border-2 ${mine?.correct ? "border-success" : "border-danger"}`}
       >
         <h2 ref={headingRef} tabIndex={-1} className="text-xl font-bold focus:outline-none">
           {!reveal ? (
@@ -358,11 +359,14 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 
 export function Finished({ room }: { room: RoomState }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
-  useEffect(() => headingRef.current?.focus(), []);
 
   const top = room.players.filter((p) => p.rank <= 3);
   const winners = room.players.filter((p) => p.rank === 1);
   const iWon = winners.some((p) => p.userId === room.me);
+  useEffect(() => {
+    headingRef.current?.focus();
+    playSound(iWon ? "win" : "finish");
+  }, [iWon]);
   // A tie on points was settled on time when the top two have different ranks
   const [first, second] = room.players;
   const tieBroken = first && second && first.score === second.score && first.rank !== second.rank;
@@ -387,10 +391,12 @@ export function Finished({ room }: { room: RoomState }) {
           </p>
         )}
         <ol className="flex w-full items-end justify-center gap-2" aria-label="Podium">
-          {top.map((p) => (
+          {top.map((p, i) => (
             <li
               key={p.userId}
-              className="border-border bg-background flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl border p-3"
+              // The podium rises from third place up to first
+              style={{ animationDelay: `${(top.length - 1 - i) * 150}ms` }}
+              className="border-border bg-background motion-safe:animate-rise flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl border p-3"
             >
               <span aria-hidden="true" className="text-3xl">
                 {MEDALS[p.rank - 1]}

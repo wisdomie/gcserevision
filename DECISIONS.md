@@ -315,3 +315,99 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
   - transformations, constructions, tree and Venn diagrams, cumulative frequency and
     histograms. They still have no generators, so they stay hidden in the topic picker;
   - lines of best fit and estimates from scatter graphs.
+
+## M8
+
+- **Rate limiting:**
+  - Fixed-window counters live in Postgres (`private.rate_limits`, `rate_limit_check`), so
+    every serverless instance shares them. An in-memory limiter would only see one instance.
+  - Limits are per user and per IP (`src/lib/api/limits.ts`):
+    - answers: 30 a minute per player;
+    - creating rooms: 10 per 10 minutes;
+    - joining: 20 per 10 minutes, which stops code guessing;
+    - starting sessions: 30 per 10 minutes;
+    - room nudges: 120 a minute.
+  - Per-IP limits are at least 10 times the per-player ones, because a whole class can share
+    a school's IP address.
+  - IPs are stored only as an HMAC (`RATE_LIMIT_SECRET`) for a day; the daily cron prunes old
+    windows.
+  - A blocked request gets a 429, a `Retry-After` header and a friendly message. If the
+    limiter itself errors, the request goes through rather than locking players out.
+- **Error monitoring:**
+  - Sentry (`@sentry/nextjs`) is on only when `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` are
+    set. The browser SDK is loaded separately, so it isn't in the main bundle.
+  - Every event passes through `scrubEvent`, which drops:
+    - the user, cookies, request bodies (answers), extra data and server name;
+    - every header except the user agent;
+    - query strings, console breadcrumbs and email addresses in messages.
+  - There's no tracing or session replay (Children's Code: no behavioural tracking).
+  - API 500s are reported from `errorResponse`. Page crashes show a friendly error page that
+    reports the error.
+- **Installable app:**
+  - `app/manifest.ts` with standard and maskable icons, drawn from `scripts/icon.svg` by
+    `scripts/make-icons.mjs`.
+  - The service worker (`public/sw.js`) loads pages from the network and shows `/offline`
+    when that fails.
+    - It redirects to `/offline?from=<page>` rather than serving the offline page at the
+      failed page's address. Otherwise Next's router can render a stale prefetched copy of
+      that page.
+    - "Try again" goes back to `from`, checked with `safeRedirectPath`.
+  - It caches hashed build assets so the offline page keeps its styles. It never caches API
+    responses, because marking must be live.
+  - It's registered only in production builds.
+  - The header shows "Paper Game" on narrow phones so the new sound button fits.
+- **Sound effects** are made with the Web Audio API, so there are no audio files:
+  - right, partly right, wrong, finished and won;
+  - quiet, and on by default, with a 🔊/🔇 toggle in the header remembered on the device.
+- **Animations:** a pop-in for feedback, reveals and results, and a rising podium. They only
+  run with `motion-safe:`, and the global reduced-motion rule stays.
+  - A "shake" for wrong answers was dropped: it felt like a telling-off.
+- **Word-problem bank:**
+  - 110 hand-written originals in `content/questions/word-problems.csv` (PLAN.md 2: in the
+    style of GCSE questions, never copied):
+    - 25 topics, both tiers, difficulties 1–5;
+    - integer, decimal, money, fraction, percentage, ratio and multiple-choice answers.
+  - `pnpm import:questions` validates every row and checks each final answer with the real
+    marker, then upserts by slug. Rows removed from the CSV go back to draft, because old
+    games still point at them.
+  - CI loads the bank before the E2E tests.
+  - **In games, each bank question is a one-question "generator"** (`bank:<id>`), so tier,
+    board, calculator and topic filtering are shared with generated questions. When
+    planning, each topic's bank counts as one choice beside that topic's generators, so
+    roughly a fifth to a third of questions are word problems rather than most of them.
+    There are no repeats in a session while unused ones remain.
+  - It's used in solo, rooms and the daily (both-tier questions only).
+  - Instances record `generator_key = 'bank:<id>'`, and the room and daily database
+    functions didn't change.
+  - Bank questions only use topics that already have generators, so the topic picker shows
+    them without the service role on the page.
+- **Accessibility audit:**
+  - `tests/e2e/a11y.spec.ts` runs axe (WCAG 2.1 A and AA) on every main screen in light and
+    dark mode: signed-out pages, hub, solo setup, question with a diagram, feedback, results,
+    daily, every leaderboard tab, profile, new room, lobby and room question.
+  - It found one real problem: answer options that are only maths had no accessible name.
+    They now get a spoken version (`mathToSpeech`, e.g. "1 over 2").
+  - MathLive's field and on-screen keyboard are third-party and left out of the audit. Its
+    keyboard has a low-contrast key; the plain text box is always available instead.
+- **Lighthouse (mobile, production build, local):**
+
+  | Page           | Performance | Accessibility | Best practices | SEO |
+  | -------------- | ----------- | ------------- | -------------- | --- |
+  | `/login`       | 99          | 100           | 100            | 100 |
+  | `/play`        | 97          | 100           | 100            | 100 |
+  | solo question  | 95          | 100           | 100            | 100 |
+  | `/leaderboard` | 100         | 100           | 100            | 100 |
+  | `/play/daily`  | 94          | 100           | 100            | 100 |
+  - Fixes: a `favicon.ico` (its 404 was a console error), and the daily page only loads the
+    question player once an attempt starts (90 → 94).
+
+- **Before launch, set** `RATE_LIMIT_SECRET`, and optionally `SENTRY_DSN` and
+  `NEXT_PUBLIC_SENTRY_DSN`, in Vercel. Then run `pnpm import:questions` against the
+  production database.
+- **Production database updates run from GitHub Actions** (`deploy-database.yml`, run by
+  hand). It links the project, runs `supabase db push` (with `--include-seed` on the first
+  run) and imports the question bank.
+  - Secrets live in the repository's Actions secrets, so nobody needs the project on their
+    own computer or has to paste keys anywhere else.
+  - It never runs automatically, so production only changes when someone chooses to update
+    it.
