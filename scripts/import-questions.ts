@@ -63,7 +63,9 @@ async function main() {
 
   const missing = questions.filter((q) => !topicId.has(q.topicSlug));
   if (missing.length > 0)
-    throw new Error(`Unknown topics: ${missing.map((q) => `${q.slug} (${q.topicSlug})`).join(", ")}`);
+    throw new Error(
+      `Unknown topics: ${missing.map((q) => `${q.slug} (${q.topicSlug})`).join(", ")}`,
+    );
 
   const { data: saved, error } = await db
     .from("questions")
@@ -96,7 +98,10 @@ async function main() {
   const boardRows = questions.flatMap((q) =>
     q.boards === "all"
       ? []
-      : q.boards.map((b) => ({ question_id: idBySlug.get(q.slug)!, exam_board_id: boardId.get(b)! })),
+      : q.boards.map((b) => ({
+          question_id: idBySlug.get(q.slug)!,
+          exam_board_id: boardId.get(b)!,
+        })),
   );
   if (boardRows.length > 0) {
     const { error: boardError } = await db.from("question_boards").insert(boardRows);
