@@ -1,0 +1,75 @@
+name: Deploy database
+
+# Updates the production Supabase database: applies new migrations and loads
+# the question bank. Run it by hand from the Actions tab (it never runs on its
+# own, so production only changes when you choose):
+#   - the first time, tick "seed" to load the topics and exam boards;
+#   - after merging a pull request that adds a migration or changes
+#     content/questions/*.csv, run it again without "seed".
+#
+# It needs these repository secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_ACCESS_TOKEN      personal access token from supabase.com/dashboard/account/tokens
+#   SUPABASE_PROJECT_REF       the project's reference ID (Project Settings → General)
+#   SUPABASE_DB_PASSWORD       the database password chosen when creating the project
+#   SUPABASE_URL               https://<ref>.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY  Project Settings → API keys → service_role
+
+on:
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: "First run only: load topics and exam boards (supabase/seed.sql)"
+        type: boolean
+        default: false
+      dry_run:
+        description: "Only list the migrations that would be applied"
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-database
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check the secrets are set
+        run: |
+          missing=0
+          for name in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_REF NEXT_PUBLIC_SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!name}" ]; then echo "::error::Missing secret for $name"; missing=1; fi
+          done
+          exit $missing
+
+      - name: Validate the question bank
+        run: pnpm import:questions --check
+
+      - name: Link the production project
+        run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Apply migrations
+        run: |
+          args=(--password "$SUPABASE_DB_PASSWORD")
+          if [ "${{ inputs.dry_run }}" = "true" ]; then args+=(--dry-run); fi
+          if [ "${{ inputs.seed }}" = "true" ]; then args+=(--include-seed); fi
+          pnpm exec supabase db push "${args[@]}"
+
+      - name: Load the question bank
+        if: ${{ !inputs.dry_run }}
+        run: pnpm import:questions

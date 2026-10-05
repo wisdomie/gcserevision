@@ -404,3 +404,10 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
 - **Before launch, set** `RATE_LIMIT_SECRET`, and optionally `SENTRY_DSN` and
   `NEXT_PUBLIC_SENTRY_DSN`, in Vercel. Then run `pnpm import:questions` against the
   production database.
+- **Production database updates run from GitHub Actions** (`deploy-database.yml`, run by
+  hand). It links the project, runs `supabase db push` (with `--include-seed` on the first
+  run) and imports the question bank.
+  - Secrets live in the repository's Actions secrets, so nobody needs the project on their
+    own computer or has to paste keys anywhere else.
+  - It never runs automatically, so production only changes when someone chooses to update
+    it.
