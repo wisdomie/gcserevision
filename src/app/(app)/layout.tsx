@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Link
             href="/play"
             aria-label="Past Paper Game: home"
-            className="min-h-11 min-w-0 content-center truncate font-bold"
+            className="min-h-11 content-center font-bold whitespace-nowrap"
           >
             {/* A shorter name on narrow phones leaves room for the buttons */}
             <span className="sm:hidden">Paper Game</span>

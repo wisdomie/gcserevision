@@ -4,9 +4,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ApiError } from "./handler";
 import { clientIp, LIMITS, tooManyMessage, type ActionLimits, type LimitedAction } from "./limits";
 
-/** IPs are stored only as a keyed hash, and only for a day. */
+/**
+ * IPs are stored only as a keyed hash, and only for a day. Set RATE_LIMIT_SECRET
+ * in production so the hashes can't be reversed by trying every address.
+ */
 function hashIp(ip: string): string {
-  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  const secret = process.env.RATE_LIMIT_SECRET ?? "past-paper-game";
   return createHmac("sha256", secret).update(ip).digest("base64url").slice(0, 22);
 }
 

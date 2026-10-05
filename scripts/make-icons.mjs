@@ -1,6 +1,6 @@
 // Renders scripts/icon.svg to the PNG app icons in public/icons.
 // Run with: node scripts/make-icons.mjs (uses Playwright's Chromium).
-import { readFileSync } from "node:fs";
+import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { chromium } from "@playwright/test";
 
 const svg = readFileSync(new URL("./icon.svg", import.meta.url), "utf8");
@@ -22,4 +22,20 @@ await render("icon-192.png", 192);
 await render("icon-512.png", 512);
 await render("icon-maskable-512.png", 512, 64);
 await render("apple-touch-icon.png", 180, 12);
+
+// favicon.ico: an ICO file holding one 48px PNG (supported by every current browser)
+await render("favicon-48.png", 48);
+const png = readFileSync("public/icons/favicon-48.png");
+const header = Buffer.alloc(22);
+header.writeUInt16LE(0, 0); // reserved
+header.writeUInt16LE(1, 2); // type: icon
+header.writeUInt16LE(1, 4); // one image
+header.writeUInt8(48, 6); // width
+header.writeUInt8(48, 7); // height
+header.writeUInt16LE(1, 10); // colour planes
+header.writeUInt16LE(32, 12); // bits per pixel
+header.writeUInt32LE(png.length, 14);
+header.writeUInt32LE(22, 18); // offset of the image data
+writeFileSync("public/favicon.ico", Buffer.concat([header, png]));
+unlinkSync("public/icons/favicon-48.png");
 await browser.close();
