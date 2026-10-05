@@ -1,4 +1,5 @@
 import "server-only";
+import { z } from "zod";
 import { ApiError } from "@/lib/api/handler";
 import { check } from "@/lib/engine/answers/check";
 import { getGenerator, listGenerators } from "@/lib/engine/generators/registry";
@@ -18,9 +19,16 @@ import {
   type SoloSettings,
   type SoloStartInput,
 } from "./solo";
+import { DailySettingsSchema } from "./daily";
 import type { SoloAnswerResult, SoloCurrentQuestion, SoloState, SoloSummary } from "./solo-types";
 
 type Admin = ReturnType<typeof createAdminClient>;
+
+/** A solo session is plain practice or a daily attempt (PLAN.md M6). */
+const SessionSettingsSchema = z.discriminatedUnion("mode", [
+  SoloSettingsSchema,
+  DailySettingsSchema,
+]);
 
 /** Our payloads are plain JSON objects; the generated DB types need the cast. */
 const asJson = (value: object) => value as unknown as Json;
@@ -157,7 +165,7 @@ async function loadSession(admin: Admin, userId: string, sessionId: string) {
     .maybeSingle();
   if (error) throw error;
   if (!data) throw new ApiError(404, "We couldn't find that practice session.");
-  return { ...data, settings: SoloSettingsSchema.parse(data.settings) };
+  return { ...data, settings: SessionSettingsSchema.parse(data.settings) };
 }
 
 async function loadAnswers(admin: Admin, sessionId: string) {
@@ -257,6 +265,9 @@ export async function submitSoloAnswer(
   if (finished) {
     const answers = await loadAnswers(admin, session.id);
     summary = buildSummary(score, Math.max(session.streak_best, streak), answers);
+  } else if (session.settings.mode === "daily") {
+    // A daily attempt's questions are linked when it starts
+    next = await linkedQuestion(admin, session.id, link.idx + 1);
   } else {
     const { subjectId, topics } = await loadSubjectAndTopics(admin);
     next = await serveQuestion(
@@ -283,25 +294,32 @@ export async function submitSoloAnswer(
   };
 }
 
+/** The question already stored at slot `idx` of a session, if any. */
+async function linkedQuestion(
+  admin: Admin,
+  sessionId: string,
+  idx: number,
+): Promise<SoloCurrentQuestion | null> {
+  const { data, error } = await admin
+    .from("solo_session_questions")
+    .select("idx, instance_id, question_instances(public_payload)")
+    .eq("session_id", sessionId)
+    .eq("idx", idx)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data?.question_instances) return null;
+  const payload = data.question_instances.public_payload as unknown as PublicPayload;
+  return { index: data.idx, question: { instanceId: data.instance_id, ...payload } };
+}
+
 export async function getSoloState(userId: string, sessionId: string): Promise<SoloState> {
   const admin = createAdminClient();
   const session = await loadSession(admin, userId, sessionId);
   const answers = await loadAnswers(admin, session.id);
 
-  let current: SoloCurrentQuestion | null = null;
-  if (!session.finished_at) {
-    const { data, error } = await admin
-      .from("solo_session_questions")
-      .select("idx, instance_id, question_instances(public_payload)")
-      .eq("session_id", session.id)
-      .eq("idx", answers.length)
-      .maybeSingle();
-    if (error) throw error;
-    if (data?.question_instances) {
-      const payload = data.question_instances.public_payload as unknown as PublicPayload;
-      current = { index: data.idx, question: { instanceId: data.instance_id, ...payload } };
-    }
-  }
+  const current = session.finished_at
+    ? null
+    : await linkedQuestion(admin, session.id, answers.length);
 
   return {
     sessionId: session.id,
