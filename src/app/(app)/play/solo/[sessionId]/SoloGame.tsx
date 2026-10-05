@@ -199,7 +199,7 @@ function Feedback({
 }) {
   return (
     <Card
-      className={`flex flex-col gap-3 border-2 motion-safe:animate-pop-in ${result.correct ? "border-success" : "border-danger"}`}
+      className={`motion-safe:animate-pop-in flex flex-col gap-3 border-2 ${result.correct ? "border-success" : "border-danger"}`}
     >
       <h2
         ref={headingRef}
