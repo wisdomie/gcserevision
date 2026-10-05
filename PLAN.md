@@ -638,9 +638,9 @@ Each milestone ends with: tests passing, checklist ticked here, and a commit.
 **Done when:** 4 real phones can play a 10-question room with no desyncs, with a host who closes their tab mid-game not stalling it.
 
 ### M6: Daily challenge and streaks
-- [ ] Scheduled job (Supabase cron or Vercel cron) creates `daily_challenges` each day
-- [ ] Daily play screen, results, friends leaderboard, streak counter (a daily attempt is a `solo_sessions` row with `settings.mode = 'daily'`, one per user per date, so `answers` keeps its solo/room constraint)
-- [ ] Shareable result card (a text summary the user can copy)
+- [x] Scheduled job (Supabase cron or Vercel cron) creates `daily_challenges` each day
+- [x] Daily play screen, results, friends leaderboard, streak counter (a daily attempt is a `solo_sessions` row with `settings.mode = 'daily'`, one per user per date, so `answers` keeps its solo/room constraint)
+- [x] Shareable result card (a text summary the user can copy)
 
 ### M7: Diagrams and geometry/statistics topics
 - [ ] A diagram component (inline SVG, or JSXGraph) with a typed `diagram` field on `GeneratedQuestion`

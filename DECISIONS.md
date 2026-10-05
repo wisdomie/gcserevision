@@ -225,3 +225,47 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
 - **Presence is a follow-up:** a player who leaves without pressing "Leave" still counts towards
   "everyone answered", so their questions wait for the full timer. It's slower but never stuck.
   Realtime Presence could drop them from the count (M8).
+
+## M6
+
+- **Creating each day's challenge:**
+  - It's a Vercel Cron job (`vercel.json`, 00:05 UTC) calling `GET /api/cron/daily`.
+  - The question generators are TypeScript, so Supabase cron (SQL) can't create questions.
+  - The route needs `Authorization: Bearer $CRON_SECRET`; with no secret configured, it
+    refuses every request.
+  - It makes today's and tomorrow's challenges, so nobody waits at midnight. If the job hasn't
+    run, the first player of the day creates the challenge.
+  - `create_daily_challenge` takes a lock per date and keeps the first set of questions, so
+    racing requests can't make two versions of a day or leave stray questions.
+- **A random seed per day, not a date-based seed.** The generators are open source, so a
+  date-based seed would let anyone work out a day's answers in advance.
+- **The same five questions for everyone:**
+  - only generators valid for both tiers and every board, with no diagrams (32 today);
+  - five different topics, easiest first;
+  - instances are stored with tier `both`.
+- **An attempt is a `solo_sessions` row with `settings.mode = 'daily'`** (PLAN.md M6):
+  - a partial unique index allows one per player per date;
+  - all five shared instances are linked when the attempt starts. `solo_session_questions`
+    is now unique per session instead of per instance, so every player links the same
+    instances;
+  - answers go through the solo answer route, so marking, worked solutions, XP and topic
+    stats work exactly as in solo;
+  - it's untimed, with one go a day.
+- **Days roll over at midnight UK time**, like the weekly leaderboard.
+- **Streak = days in a row with a finished daily.**
+  - It stays alive until the end of the next day, so "2 days" is still shown the morning
+    after.
+  - An unfinished attempt doesn't count.
+  - The copy is positive: "Play today to keep it going". It never warns about losing a streak
+    (PLAN.md 11).
+- **Friends board for the daily:**
+  - you and the people you've played a room with who have finished today, ranked by points;
+  - shown on the results screen once you've finished, and on a "Today" tab on
+    `/leaderboard`;
+  - each row shows points, the number correct and the player's streak, never answers;
+  - this tab covers PLAN.md's "daily streaks" leaderboard.
+- **Share card** is plain text: date, 🟩/⬜ per question, score and streak (if 2 or more). It
+  never includes questions or answers. "Copy result" uses the clipboard and falls back to
+  asking the player to select the text.
+- **CI** sets a random `CRON_SECRET` per run so the E2E test can call the cron route.
+- **Before launch** set `CRON_SECRET` in Vercel; Vercel then sends it to the cron route.

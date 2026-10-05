@@ -2,16 +2,25 @@ import type { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
 import { ButtonLink } from "@/components/ui/Button";
 import { JoinRoomForm } from "@/components/game/JoinRoomForm";
+import { dailyDate } from "@/lib/game/daily";
 import { getMyProfile } from "@/lib/profile/server";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Play · Past Paper Game" };
 
-const COMING_SOON = [
-  { title: "Daily challenge", text: "Five questions a day, same for everyone." },
-];
-
 export default async function PlayHub() {
   const { profile } = await getMyProfile();
+  const supabase = await createClient();
+  const [{ data: streak }, { data: today }] = await Promise.all([
+    supabase.rpc("my_daily_streak"),
+    supabase
+      .from("solo_sessions")
+      .select("finished_at")
+      .eq("settings->>mode", "daily")
+      .eq("settings->>date", dailyDate())
+      .maybeSingle(),
+  ]);
+  const doneToday = Boolean(today?.finished_at);
   return (
     <>
       <div>
@@ -44,17 +53,27 @@ export default async function PlayHub() {
         </Card>
       </div>
 
-      <div className="grid gap-3">
-        {COMING_SOON.map((m) => (
-          <Card key={m.title} className="flex flex-col gap-1 opacity-70">
-            <h2 className="font-semibold">{m.title}</h2>
-            <p className="text-muted text-sm">{m.text}</p>
-            <p className="text-muted mt-1 text-xs font-medium tracking-wide uppercase">
-              Coming soon
+      <Card className="flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-lg font-semibold">Daily challenge</h2>
+          {(streak ?? 0) > 0 && (
+            <p
+              className="text-sm font-medium"
+              aria-label={`Daily streak: ${streak} day${streak === 1 ? "" : "s"}`}
+            >
+              🔥 {streak}
             </p>
-          </Card>
-        ))}
-      </div>
+          )}
+        </div>
+        <p className="text-muted text-sm">
+          {doneToday
+            ? "Done for today. A new one arrives at midnight."
+            : "Five questions, the same for everyone today. Compare with your friends."}
+        </p>
+        <ButtonLink href="/play/daily" variant={doneToday ? "secondary" : "primary"}>
+          {doneToday ? "See today's results" : today ? "Carry on" : "Play today's challenge"}
+        </ButtonLink>
+      </Card>
     </>
   );
 }
