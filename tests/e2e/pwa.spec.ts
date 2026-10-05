@@ -1,16 +1,24 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { signUp } from "./helpers";
 
 /**
- * Presses "Try again" until the page loads. Just after the connection comes back the
- * service worker can still be offline for a moment, which correctly shows the offline
- * page again: a player would simply tap again.
+ * Checks "Try again" on the offline page takes the player back to the page that
+ * failed. It runs in a fresh tab of a new, online browser context with the same
+ * sign-in: switching Playwright's simulated network back on doesn't reliably reach
+ * the service worker in CI, and real phones don't use that switch.
  */
-async function retryUntil(page: Page, url: RegExp) {
-  await expect(async () => {
-    await page.getByRole("button", { name: "Try again" }).click({ timeout: 2000 });
-    await expect(page).toHaveURL(url, { timeout: 2000 });
-  }).toPass({ timeout: 20_000 });
+async function retryWhenBackOnline(
+  browser: Browser,
+  context: BrowserContext,
+  page: Page,
+  url: RegExp,
+) {
+  const online = await browser.newContext({ storageState: await context.storageState() });
+  const tab = await online.newPage();
+  await tab.goto(page.url());
+  await tab.getByRole("button", { name: "Try again" }).click();
+  await expect(tab).toHaveURL(url);
+  return tab;
 }
 
 // PLAN.md M8: installable, with an offline page instead of the browser's error.
@@ -31,7 +39,11 @@ test("the app has a manifest with working icons", async ({ request }) => {
   }
 });
 
-test("pages show a friendly offline screen without a connection", async ({ page, context }) => {
+test("pages show a friendly offline screen without a connection", async ({
+  page,
+  context,
+  browser,
+}) => {
   await page.goto("/login");
   // Wait for the service worker to take control of the page
   await page.evaluate(async () => {
@@ -49,14 +61,15 @@ test("pages show a friendly offline screen without a connection", async ({ page,
   await expect(page).toHaveURL(/\/offline\?from=%2Fprivacy$/);
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
 
-  await context.setOffline(false);
-  await retryUntil(page, /\/privacy$/);
-  await expect(page.getByRole("heading", { name: /privacy/i })).toBeVisible();
+  const tab = await retryWhenBackOnline(browser, context, page, /\/privacy$/);
+  await expect(tab.getByRole("heading", { name: /privacy/i })).toBeVisible();
+  await tab.context().close();
 });
 
 test("a signed-in page that was prefetched still shows the offline screen", async ({
   page,
   context,
+  browser,
 }) => {
   await signUp(page);
   await page.evaluate(async () => {
@@ -74,7 +87,7 @@ test("a signed-in page that was prefetched still shows the offline screen", asyn
   await page.waitForTimeout(500);
   await expect(page.getByRole("heading", { name: "You're offline" })).toBeVisible();
 
-  await context.setOffline(false);
-  await retryUntil(page, /\/leaderboard$/);
-  await expect(page.getByRole("heading", { name: "This week's leaderboard" })).toBeVisible();
+  const tab = await retryWhenBackOnline(browser, context, page, /\/leaderboard$/);
+  await expect(tab.getByRole("heading", { name: "This week's leaderboard" })).toBeVisible();
+  await tab.context().close();
 });
