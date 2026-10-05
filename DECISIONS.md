@@ -269,3 +269,49 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
   asking the player to select the text.
 - **CI** sets a random `CRON_SECRET` per run so the E2E test can call the cron route.
 - **Before launch** set `CRON_SECRET` in Vercel; Vercel then sends it to the cron route.
+
+## M7
+
+- **Diagrams are typed data drawn as inline SVG**, not JSXGraph and not stored SVG strings.
+  - A `Diagram` (`src/lib/engine/diagram.ts`) is one of:
+    - `geometry`: shapes, labels, right-angle marks and angle arcs;
+    - `graph`: coordinate grids with lines or scatter points;
+    - `bar`: bar charts.
+  - Generators produce the data and `src/components/math/Diagram.tsx` draws it. There is no
+    new dependency and nothing runs in the browser beyond React.
+  - Data can't carry script, unlike stored SVG.
+  - It travels in the public question (`public_payload.diagram`), so a diagram must never
+    reveal the answer. The unknown is labelled `x`, and the property tests check that no
+    label equals the answer.
+- **Accessibility:** every diagram has required `alt` text, read out instead of the picture
+  (`role="img"`). For charts the alt text lists the data, because that's what the question
+  is about.
+- **Geometry is drawn close to the real shape but captioned "Not drawn accurately"**, as on
+  exam papers. Triangles use their true proportions, and very long, thin shapes are
+  redrawn.
+- **Size:** diagrams draw at 1 unit = 1px and shrink only to fit, so text is the same size
+  in every diagram. Labels in narrow corners are pushed out to clear both lines.
+- **Coordinate grids use equal scales**, so gradients look right; scatter graphs and bar
+  charts fill the space instead.
+- **Units:**
+  - answers accept or leave off the unit, and `cm²` can be typed as `cm^2` or `cm2`;
+  - degrees can be typed `°`, `^\circ` or `\degree` (the maths keyboard);
+  - lengths and angles are rounded to 1 dp where the answer isn't whole, with the same
+    "check your rounding" feedback as before.
+- **Diagram questions are now included everywhere by default** (solo, rooms, daily). Topics
+  with generators appear in the topic picker automatically. `includeDiagrams: false` still
+  leaves them out.
+- **New generators (9, 45 in total):**
+  - missing angles (triangle, straight line, around a point);
+  - area of rectangles, triangles, parallelograms and trapezia;
+  - Pythagoras (hypotenuse and shorter side);
+  - trigonometry (missing side and missing angle);
+  - straight-line graphs (gradient, or choose the equation);
+  - bar charts (total, difference, mode);
+  - scatter graphs (type of correlation).
+  - All are for both tiers and every board. The trigonometry and Pythagoras questions are
+    calculator questions, so they're left out of non-calculator sessions.
+- **Not yet:**
+  - transformations, constructions, tree and Venn diagrams, cumulative frequency and
+    histograms. They still have no generators, so they stay hidden in the topic picker;
+  - lines of best fit and estimates from scatter graphs.
