@@ -301,7 +301,7 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
 - **Diagram questions are now included everywhere by default** (solo, rooms, daily). Topics
   with generators appear in the topic picker automatically. `includeDiagrams: false` still
   leaves them out.
-- **New generators (9, 45 in total):**
+- **New generators (9, 44 in total):**
   - missing angles (triangle, straight line, around a point);
   - area of rectangles, triangles, parallelograms and trapezia;
   - Pythagoras (hypotenuse and shorter side);
