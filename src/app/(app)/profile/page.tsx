@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ProfileForm } from "@/components/profile/ProfileForm";
+import { ScienceForm } from "@/components/profile/ScienceForm";
 import { Card } from "@/components/ui/Card";
 import { percent, topicReport, type RankedTopic } from "@/lib/game/stats";
 import { getMyProfile } from "@/lib/profile/server";
@@ -121,7 +122,10 @@ export default async function ProfilePage() {
       {auth?.isAnonymous && <SaveProgress />}
 
       <Card className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Settings</h2>
+        <div>
+          <h2 className="text-lg font-semibold">Settings</h2>
+          <p className="text-muted text-sm">The exam board and tier here are for maths.</p>
+        </div>
         <ProfileForm
           boards={(boards ?? []).map((b) => ({ slug: b.slug, name: b.name }))}
           initial={
@@ -136,6 +140,26 @@ export default async function ProfilePage() {
           }
           submitLabel="Save changes"
           afterSave="stay"
+        />
+      </Card>
+
+      <Card className="flex scroll-mt-20 flex-col gap-4" id="science">
+        <div>
+          <h2 className="text-lg font-semibold">Science</h2>
+          <p className="text-muted text-sm">Used for all your science subjects.</p>
+        </div>
+        <ScienceForm
+          boards={(boards ?? []).map((b) => ({ slug: b.slug, name: b.name }))}
+          initial={
+            profile?.science
+              ? {
+                  board: profile.science.board.slug,
+                  tier: profile.science.tier,
+                  course: profile.science.course,
+                }
+              : null
+          }
+          submitLabel="Save science settings"
         />
       </Card>
 

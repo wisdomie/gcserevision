@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { SubjectTabs } from "@/components/game/SubjectTabs";
+import { ScienceSetup } from "@/components/profile/ScienceSetup";
 import { subjectFromParam } from "@/lib/game/subjects";
 import { topicGroups } from "@/lib/game/topic-groups";
-import { getMyProfile } from "@/lib/profile/server";
+import { getMyProfile, settingsFor } from "@/lib/profile/server";
 import { RoomSetupForm } from "./RoomSetupForm";
 
 export const metadata: Metadata = { title: "Create a room · Past Paper Game" };
@@ -10,10 +11,12 @@ export const metadata: Metadata = { title: "Create a room · Past Paper Game" };
 export default async function NewRoomPage({ searchParams }: PageProps<"/rooms/new">) {
   const subject = subjectFromParam((await searchParams).subject);
   const { profile } = await getMyProfile();
-  const tier = profile?.tier ?? "foundation";
+  const settings = settingsFor(profile, subject);
+  const tier = settings?.tier ?? "foundation";
+  const course = settings?.course ?? "combined";
   const [boardGroups, mixedGroups] = await Promise.all([
-    topicGroups({ tier, board: profile?.board?.slug }, subject),
-    topicGroups({ tier, board: null }, subject),
+    topicGroups({ tier, board: settings?.board?.slug }, subject, course),
+    topicGroups({ tier, board: null }, subject, course),
   ]);
 
   return (
@@ -25,14 +28,19 @@ export default async function NewRoomPage({ searchParams }: PageProps<"/rooms/ne
         </p>
       </div>
       <SubjectTabs current={subject} path="/rooms/new" />
-      <RoomSetupForm
-        key={subject}
-        subject={subject}
-        tier={tier}
-        board={profile?.board ?? null}
-        boardGroups={boardGroups}
-        mixedGroups={mixedGroups}
-      />
+      {!settings && subject !== "maths" ? (
+        <ScienceSetup />
+      ) : (
+        <RoomSetupForm
+          key={subject}
+          subject={subject}
+          course={course}
+          tier={tier}
+          board={settings?.board ?? null}
+          boardGroups={boardGroups}
+          mixedGroups={mixedGroups}
+        />
+      )}
     </>
   );
 }

@@ -205,17 +205,23 @@ describe("the question bank", () => {
   const seed = readFileSync(join(__dirname, "..", "..", "supabase", "seed.sql"), "utf8");
   const generatedTopics = new Set(listGenerators().map((g) => g.topicSlug));
 
-  it("has about 250 maths and 150 biology questions, all valid", () => {
+  it("has about 250 maths and 210 biology questions, all valid", () => {
     expect(errors).toEqual([]);
     const count = (subject: string) => questions.filter((q) => q.subjectSlug === subject).length;
     expect(count("maths")).toBeGreaterThanOrEqual(240);
-    expect(count("biology")).toBeGreaterThanOrEqual(150);
+    expect(count("biology")).toBeGreaterThanOrEqual(210);
   });
 
-  it("has at least 6 questions for every topic it covers", () => {
+  it("has at least 6 questions for every topic it covers (5 for Triple-only topics)", () => {
+    const biology = readFileSync(
+      join(__dirname, "..", "..", "supabase", "migrations", "20261010000000_biology.sql"),
+      "utf8",
+    );
+    const tripleOnly = biology.slice(biology.indexOf("-- Separate (Triple) Biology only"));
     const counts = new Map<string, number>();
     for (const q of questions) counts.set(q.topicSlug, (counts.get(q.topicSlug) ?? 0) + 1);
-    for (const [topic, n] of counts) expect(n, topic).toBeGreaterThanOrEqual(6);
+    for (const [topic, n] of counts)
+      expect(n, topic).toBeGreaterThanOrEqual(tripleOnly.includes(`('${topic}',`) ? 5 : 6);
   });
 
   it("uses seeded topics; maths ones already have generated questions", () => {
@@ -240,7 +246,7 @@ describe("the question bank", () => {
     const biologyTopics = new Set(
       questions.filter((q) => q.subjectSlug === "biology").map((q) => q.topicSlug),
     );
-    expect(biologyTopics.size).toBeGreaterThanOrEqual(20);
+    expect(biologyTopics.size).toBeGreaterThanOrEqual(33);
     for (const slug of biologyTopics) {
       expect(generatedTopics.has(slug), slug).toBe(false);
       expect(seed, slug).not.toContain(`('${slug}',`);

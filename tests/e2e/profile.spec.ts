@@ -42,7 +42,11 @@ test("profile shows strongest and weakest topics, edits settings, and deletes th
 
   // Edit settings
   await page.goto("/profile");
-  await page.getByRole("radio", { name: "Foundation" }).check();
+  // (the maths tier; the science settings have their own)
+  await page
+    .getByRole("group", { name: "Tier", exact: true })
+    .getByRole("radio", { name: "Foundation" })
+    .check();
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
   await expect(page.getByText(/· Foundation$/)).toBeVisible();

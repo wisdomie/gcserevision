@@ -131,6 +131,9 @@ export type Database = {
           created_at: string;
           exam_board_id: number | null;
           id: string;
+          science_board_id: number | null;
+          science_course: string | null;
+          science_tier: string | null;
           tier: string | null;
           username: string;
           xp: number;
@@ -140,6 +143,9 @@ export type Database = {
           created_at?: string;
           exam_board_id?: number | null;
           id: string;
+          science_board_id?: number | null;
+          science_course?: string | null;
+          science_tier?: string | null;
           tier?: string | null;
           username: string;
           xp?: number;
@@ -149,6 +155,9 @@ export type Database = {
           created_at?: string;
           exam_board_id?: number | null;
           id?: string;
+          science_board_id?: number | null;
+          science_course?: string | null;
+          science_tier?: string | null;
           tier?: string | null;
           username?: string;
           xp?: number;
@@ -157,6 +166,13 @@ export type Database = {
           {
             foreignKeyName: "profiles_exam_board_id_fkey";
             columns: ["exam_board_id"];
+            isOneToOne: false;
+            referencedRelation: "exam_boards";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profiles_science_board_id_fkey";
+            columns: ["science_board_id"];
             isOneToOne: false;
             referencedRelation: "exam_boards";
             referencedColumns: ["id"];
@@ -684,6 +700,7 @@ export type Database = {
           name: string;
           needs_diagram: boolean;
           parent_id: number | null;
+          separate_only: boolean;
           slug: string;
           sort_order: number;
           strand: string | null;
@@ -695,6 +712,7 @@ export type Database = {
           name: string;
           needs_diagram?: boolean;
           parent_id?: number | null;
+          separate_only?: boolean;
           slug: string;
           sort_order?: number;
           strand?: string | null;
@@ -706,6 +724,7 @@ export type Database = {
           name?: string;
           needs_diagram?: boolean;
           parent_id?: number | null;
+          separate_only?: boolean;
           slug?: string;
           sort_order?: number;
           strand?: string | null;
@@ -853,7 +872,7 @@ export type Database = {
       };
       start_room: { Args: { p_room_id: string; p_user_id: string }; Returns: boolean };
       topics_with_questions: {
-        Args: { p_board?: string; p_subject: string; p_tier?: string };
+        Args: { p_board?: string; p_course?: string; p_subject: string; p_tier?: string };
         Returns: string[];
       };
       weekly_leaderboard: {

@@ -77,6 +77,13 @@ describe("keyword marking", () => {
     });
   });
 
+  it("only rejects phrases typed as written, not near misses", () => {
+    const spec: AnswerSpec = { kind: "keywords", groups: [["ethene"]], reject: ["ethane"] };
+    expect(check(spec, "ethene").correct).toBe(true);
+    expect(check(spec, "ethane").correct).toBe(false);
+    expect(check(spec, "ethenes").correct).toBe(true);
+  });
+
   it("is answered in a text box and validated by the schema", () => {
     expect(INPUT_TYPE_FOR_KIND.keywords).toBe("text");
     expect(AnswerSpecSchema.safeParse({ kind: "keywords", groups: [["a"]], need: 2 }).success).toBe(

@@ -22,12 +22,14 @@ export async function topicGroups(
     board?: BoardSlug | null;
   },
   subject: SubjectSlug = "maths",
+  /** Science only: Combined Science leaves out separate-only topics. */
+  course: "combined" | "separate" = "combined",
 ): Promise<TopicGroup[]> {
   const supabase = await createClient();
   const [{ data: topics }, { data: banked }] = await Promise.all([
     supabase
       .from("topics")
-      .select("slug, name, strand, sort_order, subjects!inner(slug)")
+      .select("slug, name, strand, sort_order, separate_only, subjects!inner(slug)")
       .eq("subjects.slug", subject)
       .order("sort_order"),
     supabase.rpc("topics_with_questions", {
@@ -35,9 +37,11 @@ export async function topicGroups(
       ...(filter.tier ? { p_tier: filter.tier } : {}),
       // undefined (any board) and null (mixed) both mean questions valid for every board
       ...(filter.board ? { p_board: filter.board } : {}),
+      p_course: course,
     }),
   ]);
-  const subjectTopics = new Set((topics ?? []).map((t) => t.slug));
+  const onCourse = (topics ?? []).filter((t) => !t.separate_only || course === "separate");
+  const subjectTopics = new Set(onCourse.map((t) => t.slug));
   const available = new Set([
     ...listGenerators(filter)
       .map((g) => g.topicSlug)
@@ -48,7 +52,7 @@ export async function topicGroups(
   return STRANDS_BY_SUBJECT[subject]
     .map((s) => ({
       ...s,
-      topics: (topics ?? [])
+      topics: onCourse
         .filter((t) => t.strand === s.slug && available.has(t.slug))
         .map((t) => ({ slug: t.slug, name: t.name })),
     }))

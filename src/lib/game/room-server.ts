@@ -24,7 +24,7 @@ import type { RevealResult, RoomReveal, RoomState } from "./room-types";
 import { planSoloSession, publicPayload, type PublicPayload } from "./solo";
 import { planWithBank } from "./bank";
 import { loadBankGenerators } from "./bank-server";
-import { loadSubjectAndTopics } from "./solo-server";
+import { loadSubjectAndTopics, topicInCourse } from "./solo-server";
 
 type Admin = ReturnType<typeof createAdminClient>;
 
@@ -115,10 +115,10 @@ export async function createRoom(
   }
 
   const filter = { tier: settings.tier, board: settings.board, topicSlugs: settings.topicSlugs };
-  const generators = listGenerators(filter).filter((g) => topics.has(g.topicSlug));
-  const bank = (await loadBankGenerators(admin, filter, settings.subject)).filter((g) =>
-    topics.has(g.topicSlug),
-  );
+  const course = settings.subject === "maths" ? null : settings.course;
+  const onCourse = (g: { topicSlug: string }) => topicInCourse(topics.get(g.topicSlug), course);
+  const generators = listGenerators(filter).filter(onCourse);
+  const bank = (await loadBankGenerators(admin, filter, settings.subject)).filter(onCourse);
   if (generators.length + bank.length === 0)
     throw new ApiError(400, "There are no questions for those settings yet.");
 

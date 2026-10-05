@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   adminClient,
   answerOnScreen,
@@ -10,12 +10,34 @@ import {
 // PLAN.md M9: a second subject, with written answers marked on key terms.
 test.use({ viewport: { width: 360, height: 740 } });
 
+/** Science settings through the API, for tests that aren't about setting them. */
+async function setScience(
+  page: Page,
+  settings = { board: "aqa", tier: "higher", course: "combined" },
+) {
+  const res = await page.request.post("/api/profile/science", { data: settings });
+  expect(res.status()).toBe(200);
+}
+
 test("a player practises Biology, answering in words and by choice", async ({ page }) => {
-  await signUp(page, { tier: "Foundation" });
+  // Higher in maths, but Foundation in Combined Science with a different board
+  await signUp(page, { board: "aqa", tier: "Higher" });
   await page.getByRole("link", { name: "Practise Biology" }).click();
   await expect(page).toHaveURL(/\/play\/solo\?subject=biology$/);
   await expect(page.getByRole("link", { name: "Biology" })).toHaveAttribute("aria-current", "page");
+
+  // First, science settings
+  await expect(page.getByRole("heading", { name: "Set up your science" })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+  await page.getByRole("radio", { name: /Combined Science/ }).check();
+  await page.getByLabel("Science exam board").selectOption("edexcel");
+  await page.getByRole("radio", { name: "Foundation" }).check();
+  await page.getByRole("button", { name: "Save and choose topics" }).click();
+  await expect(page.getByText("Combined Science · Pearson Edexcel · Foundation")).toBeVisible();
+
   await expect(page.getByRole("group", { name: "Cell biology" })).toBeVisible();
+  // Triple-only topics aren't offered on Combined Science
+  await expect(page.getByRole("checkbox", { name: "Plant hormones" })).toHaveCount(0);
   // Maths topics aren't offered here
   await expect(page.getByRole("checkbox", { name: "Fractions" })).toHaveCount(0);
   await expectNoHorizontalScroll(page);
@@ -58,6 +80,7 @@ test("a player practises Biology, answering in words and by choice", async ({ pa
 
 test("written answers earn a mark per key point", async ({ page }) => {
   await signUp(page, { tier: "Higher" });
+  await setScience(page);
   await page.goto("/play/solo?subject=biology");
   await page.getByRole("checkbox", { name: "Ecosystems and adaptations" }).check();
   await page.getByRole("radio", { name: "5" }).check({ force: true });
@@ -93,7 +116,9 @@ test("written answers earn a mark per key point", async ({ page }) => {
 
 test("friends can play a Biology room", async ({ page }) => {
   await signUp(page);
+  await setScience(page, { board: "ocr", tier: "higher", course: "separate" });
   await page.goto("/rooms/new?subject=biology");
+  await expect(page.getByRole("checkbox", { name: "Plant hormones" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Biology" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("checkbox", { name: "Photosynthesis" })).toBeVisible();
 
@@ -130,4 +155,35 @@ test("friends can play a Biology room", async ({ page }) => {
     expect(instance.generator_key).toMatch(/^bank:/);
     expect(instance.topics.slug).toBe("photosynthesis");
   }
+});
+
+test("Triple Science students also get Triple-only topics, and maths settings stay separate", async ({
+  page,
+}) => {
+  await signUp(page, { board: "aqa", tier: "Foundation" });
+  await setScience(page, { board: "aqa", tier: "higher", course: "combined" });
+  await page.goto("/profile#science");
+  await page.getByRole("radio", { name: /Triple Science/ }).check();
+  await page.getByRole("button", { name: "Save science settings" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+
+  await page.goto("/play/solo?subject=biology");
+  await expect(page.getByText("Triple Science · AQA · Higher")).toBeVisible();
+  await page.getByRole("checkbox", { name: "Plant hormones" }).check();
+  await page.getByRole("radio", { name: "5" }).check({ force: true });
+  await page.getByRole("button", { name: /^Start \(1 topic\)$/ }).click();
+  await expect(page.getByText("Question 1 of 5")).toBeVisible();
+  await expect(page.getByText("Plant hormones", { exact: true })).toBeVisible();
+
+  // Maths is still Foundation
+  const res = await page.request.post("/api/solo/start", {
+    data: { subject: "maths", topicSlugs: ["fractions"], count: 5, timed: false },
+  });
+  const state = await res.json();
+  const { data } = await adminClient()
+    .from("solo_sessions")
+    .select("settings")
+    .eq("id", state.sessionId)
+    .single();
+  expect((data!.settings as { tier: string }).tier).toBe("foundation");
 });

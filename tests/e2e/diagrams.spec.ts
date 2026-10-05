@@ -49,9 +49,9 @@ test("a Foundation player answers geometry questions with diagrams", async ({ pa
 test("live room players see the same chart", async ({ page: host, browser }) => {
   await signUp(host);
   // These topics also have hand-written questions without charts, so make
-  // rooms until the first question is a generated one with a chart
-  let code = "";
+  // rooms until one has a chart question, then move it to the front
   // (at most 8 tries: players can create 10 rooms in 10 minutes)
+  let code = "";
   for (let attempt = 0; attempt < 8 && !code; attempt++) {
     const created = await host.request.post("/api/rooms", {
       data: {
@@ -67,16 +67,29 @@ test("live room players see the same chart", async ({ page: host, browser }) => 
     const candidate = (await created.json()).code as string;
     const { data } = await adminClient()
       .from("rooms")
-      .select("room_questions(idx, question_instances(public_payload))")
+      .select("id, room_questions(idx, instance_id, question_instances(public_payload))")
       .eq("code", candidate)
       .single();
-    const first = (
-      data!.room_questions as unknown as {
-        idx: number;
-        question_instances: { public_payload: { diagram?: unknown } };
-      }[]
-    ).find((q) => q.idx === 0);
-    if (first?.question_instances.public_payload.diagram) code = candidate;
+    const questions = data!.room_questions as unknown as {
+      idx: number;
+      instance_id: string;
+      question_instances: { public_payload: { diagram?: unknown } };
+    }[];
+    const chart = questions.find((q) => q.question_instances.public_payload.diagram);
+    if (!chart) continue;
+    if (chart.idx !== 0) {
+      const first = questions.find((q) => q.idx === 0)!;
+      const swap = (instanceId: string, idx: number) =>
+        adminClient()
+          .from("room_questions")
+          .update({ idx })
+          .eq("room_id", data!.id)
+          .eq("instance_id", instanceId);
+      expect((await swap(first.instance_id, 99)).error).toBeNull();
+      expect((await swap(chart.instance_id, 0)).error).toBeNull();
+      expect((await swap(first.instance_id, chart.idx)).error).toBeNull();
+    }
+    code = candidate;
   }
   expect(code, "no room started with a chart").not.toBe("");
   const guestContext = await browser.newContext({ viewport: { width: 360, height: 740 } });

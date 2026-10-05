@@ -433,7 +433,7 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
 
 - **Biology is the second subject.** AI marking of longer answers is left for later, as the
   user asked.
-- **Reference data in a migration:** the subject and its 23 topics are in
+- **Reference data in a migration:** the subject and its 33 topics are in
   `supabase/migrations/20261010000000_biology.sql`, not `seed.sql`, because the seed only runs
   on a project's first deploy.
   - The migration also inserts maths if it's missing, and the seed now skips maths if it's
@@ -442,8 +442,12 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
   - The topics follow the content shared by the AQA, Edexcel and OCR Biology and Combined
     Science specifications.
   - They're grouped into AQA's seven sections, used as strands.
-  - Separate-Biology-only content (the brain, the eye, kidneys, monoclonal antibodies and
-    so on) is left out, so every question suits Combined Science students too.
+  - Content that's only in separate (Triple) Biology has 10 topics of its own, marked
+    `separate_only`. The user asked for Triple coverage on top of Combined, and noted it only
+    needs a few extra questions: culturing microorganisms, monoclonal antibodies, plant
+    disease, the brain and eye, temperature control and kidneys, plant hormones, DNA
+    structure, cloning and speciation, trophic levels and food security, and rates of decay.
+  - Combined Science students never see these topics, in solo practice or in rooms.
 - **Topic slugs:** topic slugs never repeat across subjects. Games match questions to topics
   by slug, and a test checks this.
 - **Keyword answers:** a new `keywords` answer kind for recall questions, typed in a plain
@@ -465,10 +469,26 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
 - **Checked examples in each row:** bank CSVs can list `right` and `wrong` sample answers.
   The importer checks each one against the real marker, so a change to the matcher or a
   row can't quietly break marking.
-- **Accuracy of the 156 Biology questions:**
+- **Science settings are separate from maths:** students can sit a different board and
+  tier in science (for example, Higher maths but Foundation Combined Science). Profiles hold
+  a science board, tier and course (Combined or Triple).
+  - All the sciences share them, because Combined Science is one qualification with one
+    board and tier. The user chose this over settings per science.
+  - Players are asked for them the first time they open a science, and can change them on
+    their profile. Maths onboarding didn't change.
+  - Rooms carry the host's course.
+- **Board-specific examples:** where a board names its own examples, the question is tagged
+  to that board.
+  - AQA: measles, Salmonella, gonorrhoea, rose black spot, aspirin, Fleming, aseptic
+    technique details, adult cell cloning and embryo transplants, and mycoprotein.
+  - Edexcel: cholera and TB were added.
+  - Everything else is common to AQA, Edexcel and OCR.
+- **Reject phrases are matched exactly**, without the one-slip allowance. A slip in "ethene"
+  still counts as ethene, but typing "ethane" is wrong.
+- **Accuracy of the 214 Biology questions (156 shared, 58 Triple-only or board-specific):**
   - They're original, with every number computed by a script.
-  - An independent review re-checked the science, the tiers, and the marking with 610 trial
-    answers.
+  - Two independent reviews re-checked the science, the tiers and the boards, and tested the
+    marking with about 800 trial answers.
   - Its fixes were applied. These were mostly extra accepted phrasings ("heart pumps
     faster", "spinal chord", "weak virus") and a few wrong answers that had been accepted
     ("heart rate decreases", "let blood flow backwards").
@@ -485,7 +505,8 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
 - **Calculator label:** it's hidden outside Maths, where it means nothing.
 - **Test fixes found along the way:**
   - Since the bank grew, every diagram topic also has hand-written questions without
-    charts. The diagram room test now makes rooms until the first question has a chart, up
-    to 8 times (players can create 10 rooms in 10 minutes).
+    charts. The diagram room test now makes rooms until one has a chart question (up to 8
+    times: players can create 10 rooms in 10 minutes), then moves that question to the
+    front, so it doesn't depend on chance.
   - The room and solo tests look for the "Answer:" label exactly, because a worked solution
     can contain the same words.

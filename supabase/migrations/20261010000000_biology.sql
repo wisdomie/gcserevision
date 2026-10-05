@@ -4,14 +4,21 @@
 -- only runs on a project's first deploy. Maths is inserted here too (if
 -- missing) so subject ids are the same however the database was built.
 --
--- Topics follow the content shared by the AQA, Edexcel and OCR Biology and
--- Combined Science specifications, grouped into strands. Questions are all
--- hand-written (content/questions/biology.csv).
+-- Topics follow the AQA, Edexcel and OCR Biology and Combined Science
+-- specifications, grouped into strands. Content only in separate (Triple)
+-- Biology has its own topics, marked separate_only, which Combined Science
+-- students don't see. Questions are all hand-written (content/questions/biology.csv).
+--
+-- Science settings: a student's science board, tier and course can differ from
+-- maths, and are shared by all the sciences (Combined Science is one
+-- qualification with one board and tier).
 
 insert into public.subjects (slug, name, is_active) values
   ('maths', 'Mathematics', true),
   ('biology', 'Biology', true)
 on conflict (slug) do nothing;
+
+alter table public.topics add column separate_only boolean not null default false;
 
 insert into public.topics (subject_id, slug, name, strand, min_tier, needs_diagram, sort_order)
 select s.id, t.slug, t.name, t.strand, 'foundation', false, t.sort_order
@@ -51,17 +58,50 @@ cross join (values
 where s.slug = 'biology'
 on conflict (subject_id, slug) do nothing;
 
+-- Separate (Triple) Biology only
+insert into public.topics (subject_id, slug, name, strand, min_tier, needs_diagram, sort_order, separate_only)
+select s.id, t.slug, t.name, t.strand, 'foundation', false, t.sort_order, true
+from public.subjects s
+cross join (values
+  ('culturing-microorganisms', 'Culturing microorganisms',         'cell-biology',  1004),
+  ('monoclonal-antibodies',    'Monoclonal antibodies',            'infection',     1203),
+  ('plant-disease',            'Plant disease and defences',       'infection',     1204),
+  ('brain-and-eye',            'The brain and the eye',            'homeostasis',   1403),
+  ('temperature-and-kidneys',  'Body temperature and the kidneys', 'homeostasis',   1404),
+  ('plant-hormones',           'Plant hormones',                   'homeostasis',   1405),
+  ('dna-structure',            'DNA structure and protein synthesis', 'inheritance', 1504),
+  ('cloning-and-speciation',   'Cloning and speciation',           'inheritance',   1505),
+  ('trophic-levels',           'Trophic levels and food security', 'ecology',       1603),
+  ('decay-rates',              'Rates of decay',                   'ecology',       1604)
+) as t(slug, name, strand, sort_order)
+where s.slug = 'biology'
+on conflict (subject_id, slug) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Science settings on the profile, shared by all sciences
+-- ---------------------------------------------------------------------------
+
+alter table public.profiles
+  add column science_board_id smallint references public.exam_boards(id),
+  add column science_tier text check (science_tier in ('foundation', 'higher')),
+  add column science_course text check (science_course in ('combined', 'separate'));
+
+grant insert (science_board_id, science_tier, science_course) on public.profiles to authenticated;
+grant update (science_board_id, science_tier, science_course) on public.profiles to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- topics_with_questions: the slugs of a subject's topics that have published
--- hand-written questions for a tier and board, so the topic picker can show
--- bank-only topics without reading the questions themselves. `p_board` null
--- means mixed boards (only questions valid for every board).
+-- hand-written questions for a tier, board and course, so the topic picker can
+-- show bank-only topics without reading the questions themselves. `p_board`
+-- null means mixed boards (only questions valid for every board); separate-only
+-- topics are included only for p_course = 'separate'.
 -- ---------------------------------------------------------------------------
 
 create function public.topics_with_questions(
   p_subject text,
   p_tier text default null,
-  p_board text default null
+  p_board text default null,
+  p_course text default null
 )
 returns setof text
 language sql
@@ -75,6 +115,7 @@ as $$
   join public.subjects s on s.id = t.subject_id
   where s.slug = p_subject
     and q.status = 'published'
+    and (not t.separate_only or p_course = 'separate')
     and (p_tier is null or q.tier in ('both', p_tier))
     and (
       not exists (select 1 from public.question_boards qb where qb.question_id = q.id)
@@ -89,5 +130,5 @@ as $$
     );
 $$;
 
-revoke all on function public.topics_with_questions(text, text, text) from public;
-grant execute on function public.topics_with_questions(text, text, text) to anon, authenticated, service_role;
+revoke all on function public.topics_with_questions(text, text, text, text) from public;
+grant execute on function public.topics_with_questions(text, text, text, text) to anon, authenticated, service_role;

@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { SubjectTabs } from "@/components/game/SubjectTabs";
+import { ScienceSetup } from "@/components/profile/ScienceSetup";
+import { COURSES } from "@/lib/profile/science";
 import { subjectFromParam } from "@/lib/game/subjects";
 import { topicGroups } from "@/lib/game/topic-groups";
-import { getMyProfile } from "@/lib/profile/server";
+import { getMyProfile, settingsFor } from "@/lib/profile/server";
 import { SoloSetupForm } from "./SoloSetupForm";
 
 export const metadata: Metadata = { title: "Solo practice · Past Paper Game" };
@@ -11,10 +14,14 @@ export default async function SoloSetupPage({ searchParams }: PageProps<"/play/s
   const { topics: requested, subject: subjectParam } = await searchParams;
   const subject = subjectFromParam(subjectParam);
   const { profile } = await getMyProfile();
-  const groups = await topicGroups(
-    { tier: profile?.tier ?? undefined, board: profile?.board?.slug },
-    subject,
-  );
+  const settings = settingsFor(profile, subject);
+  const groups = settings
+    ? await topicGroups(
+        { tier: settings.tier, board: settings.board?.slug },
+        subject,
+        settings.course,
+      )
+    : [];
 
   return (
     <>
@@ -25,14 +32,27 @@ export default async function SoloSetupPage({ searchParams }: PageProps<"/play/s
         </p>
       </div>
       <SubjectTabs current={subject} path="/play/solo" />
-      <SoloSetupForm
-        key={subject}
-        subject={subject}
-        groups={groups}
-        initialTopics={String(requested ?? "")
-          .split(",")
-          .filter((slug) => groups.some((g) => g.topics.some((t) => t.slug === slug)))}
-      />
+      {subject !== "maths" && settings && (
+        <p className="text-muted text-sm">
+          {COURSES.find((c) => c.value === settings.course)?.label} · {settings.board?.name} ·{" "}
+          {settings.tier === "higher" ? "Higher" : "Foundation"} ·{" "}
+          <Link href="/profile#science" className="text-accent underline">
+            Change
+          </Link>
+        </p>
+      )}
+      {!settings && subject !== "maths" ? (
+        <ScienceSetup />
+      ) : (
+        <SoloSetupForm
+          key={subject}
+          subject={subject}
+          groups={groups}
+          initialTopics={String(requested ?? "")
+            .split(",")
+            .filter((slug) => groups.some((g) => g.topics.some((t) => t.slug === slug)))}
+        />
+      )}
     </>
   );
 }

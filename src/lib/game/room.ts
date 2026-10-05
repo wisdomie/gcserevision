@@ -37,6 +37,8 @@ const slug = z.string().regex(/^[a-z0-9-]{1,60}$/);
 export const RoomSettingsSchema = z.object({
   mode: z.enum(["room", "duel"]),
   subject: SubjectSlugSchema.default("maths"),
+  /** Science only: Combined Science rooms leave out separate-only topics. */
+  course: z.enum(["combined", "separate"]).default("combined"),
   /** null = mixed boards: only questions valid for every board */
   board: z.enum(BOARD_SLUGS).nullable(),
   tier: z.enum(TIERS),

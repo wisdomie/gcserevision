@@ -56,12 +56,14 @@ function Choices<T extends string | number>({
 
 export function RoomSetupForm({
   subject,
+  course,
   tier: myTier,
   board,
   boardGroups,
   mixedGroups,
 }: {
   subject: SubjectSlug;
+  course: "combined" | "separate";
   tier: Tier;
   board: { slug: BoardSlug; name: string } | null;
   boardGroups: TopicGroup[];
@@ -91,6 +93,7 @@ export function RoomSetupForm({
       body: JSON.stringify({
         mode,
         subject,
+        course,
         board: boardChoice === "mine" ? board?.slug : null,
         tier,
         topicSlugs,

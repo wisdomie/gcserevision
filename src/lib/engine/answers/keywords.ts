@@ -39,8 +39,8 @@ function distance(a: string, b: string, max: number): number {
   return prev[b.length];
 }
 
-/** Whether a typed word counts as the expected word. */
-export function sameWord(typed: string, expected: string): boolean {
+/** Whether a typed word counts as the expected word; `fuzzy` forgives one slip. */
+export function sameWord(typed: string, expected: string, fuzzy = true): boolean {
   if (typed === expected) return true;
   // Plurals and simple endings, both ways ("enzyme"/"enzymes", "capillary"/"capillaries")
   for (const end of ENDINGS) {
@@ -50,6 +50,7 @@ export function sameWord(typed: string, expected: string): boolean {
     if (end === "ies" && typed.endsWith("y") && expected === typed.slice(0, -1) + end) return true;
   }
   // One slip in a longer word; digits must match exactly
+  if (!fuzzy) return false;
   return expected.length >= 6 && !/\d/.test(expected + typed) && distance(typed, expected, 1) <= 1;
 }
 
@@ -57,9 +58,15 @@ export function sameWord(typed: string, expected: string): boolean {
 export const MAX_GAP = 6;
 
 /** Where `target` starts in `answer` at or after `from`, as consecutive words; -1 if nowhere. */
-function findRun(answer: string[], target: string[], from: number, to: number): number {
+function findRun(
+  answer: string[],
+  target: string[],
+  from: number,
+  to: number,
+  fuzzy: boolean,
+): number {
   for (let i = from; i <= to && i + target.length <= answer.length; i++) {
-    if (target.every((w, k) => sameWord(answer[i + k], w))) return i;
+    if (target.every((w, k) => sameWord(answer[i + k], w, fuzzy))) return i;
   }
   return -1;
 }
@@ -69,7 +76,7 @@ function findRun(answer: string[], target: string[], from: number, to: number): 
  * consecutive, except that "..." allows up to MAX_GAP words in between:
  * "higher ... lower" matches "from a higher concentration to a lower one".
  */
-export function containsPhrase(answer: string[], phrase: string): boolean {
+export function containsPhrase(answer: string[], phrase: string, fuzzy = true): boolean {
   const parts = phrase
     .split("...")
     .map(words)
@@ -77,7 +84,7 @@ export function containsPhrase(answer: string[], phrase: string): boolean {
   if (parts.length === 0) return false;
   const match = (part: number, from: number, to: number): boolean => {
     for (let start = from; start <= to; start++) {
-      const at = findRun(answer, parts[part], start, to);
+      const at = findRun(answer, parts[part], start, to, fuzzy);
       if (at < 0) return false;
       const end = at + parts[part].length;
       if (part === parts.length - 1 || match(part + 1, end, end + MAX_GAP)) return true;
@@ -102,6 +109,7 @@ export function matchKeywords(
   const answer = words(raw);
   return {
     matched: spec.groups.filter((g) => g.some((p) => containsPhrase(answer, p))).length,
-    rejected: (spec.reject ?? []).some((p) => containsPhrase(answer, p)),
+    // Rejected phrases must be typed as written: a slip in "ethene" isn't "ethane"
+    rejected: (spec.reject ?? []).some((p) => containsPhrase(answer, p, false)),
   };
 }
