@@ -2,13 +2,7 @@ import "server-only";
 import { createHmac } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ApiError } from "./handler";
-import {
-  clientIp,
-  LIMITS,
-  tooManyMessage,
-  type ActionLimits,
-  type LimitedAction,
-} from "./limits";
+import { clientIp, LIMITS, tooManyMessage, type ActionLimits, type LimitedAction } from "./limits";
 
 /** IPs are stored only as a keyed hash, and only for a day. */
 function hashIp(ip: string): string {

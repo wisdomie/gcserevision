@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { reportServerError } from "@/lib/monitoring/server";
 import { getUserId } from "@/lib/supabase/auth";
 
 /** An error with an HTTP status and a message that is safe to show players. */
@@ -26,6 +27,7 @@ export function errorResponse(error: unknown): Response {
   if (error instanceof z.ZodError)
     return Response.json({ error: "Invalid request" }, { status: 400 });
   console.error(error);
+  void reportServerError(error);
   return Response.json({ error: "Something went wrong. Please try again." }, { status: 500 });
 }
 
