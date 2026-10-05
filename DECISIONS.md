@@ -363,10 +363,27 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
   run with `motion-safe:`, and the global reduced-motion rule stays.
   - A "shake" for wrong answers was dropped: it felt like a telling-off.
 - **Word-problem bank:**
-  - 110 hand-written originals in `content/questions/word-problems.csv` (PLAN.md 2: in the
-    style of GCSE questions, never copied):
-    - 25 topics, both tiers, difficulties 1–5;
-    - integer, decimal, money, fraction, percentage, ratio and multiple-choice answers.
+  - 250 hand-written originals in `content/questions/*.csv` (PLAN.md 2: in the style of
+    GCSE questions, never copied):
+    - 26 topics, at least 6 questions each, both tiers, difficulties 1–5;
+    - integer, decimal, money, fraction, percentage, ratio, standard form, expression,
+      equation-solution and multiple-choice answers.
+    - The first 110 (`word-problems.csv`) leaned on number, ratio and statistics. The second
+      140 (`word-problems-2.csv`) fill the thin topics (algebra, geometry, powers, standard
+      form, sequences, bounds) and add straight-line and scatter graphs.
+    - Tiers follow the DfE subject content: Higher-only content (quadratic formula,
+      completing the square, sine and cosine rules, ½ab sin C, 3D Pythagoras, bounds
+      calculations, fractional indices, perpendicular gradients, algebraic fractions,
+      factorising $ax^2 + bx + c$, quadratic nth terms, triple brackets, subject appearing
+      twice) is tagged `higher`. Error intervals, negative and zero indices, standard form,
+      simple factorising, trig ratios and exact values are in both tiers.
+    - Answers were computed by a script, not by hand, and an independent review re-checked
+      each question's maths and tier. Questions too close to an existing one (same context
+      and method) were replaced.
+    - Tables are written as KaTeX arrays, because prompts are plain text with inline maths.
+    - Algebra answers use the same markers as generated questions. `form` (expanded,
+      factorised or simplified) and `variable` are optional CSV columns, so the first file
+      didn't change.
   - `pnpm import:questions` validates every row and checks each final answer with the real
     marker, then upserts by slug. Rows removed from the CSV go back to draft, because old
     games still point at them.

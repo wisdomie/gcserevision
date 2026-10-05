@@ -36,6 +36,12 @@ export function loadBank(): { questions: BankQuestion[]; errors: string[] } {
   return { questions, errors };
 }
 
+function chunks<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
 async function main() {
   const { questions, errors } = loadBank();
   if (errors.length > 0) {
@@ -92,9 +98,11 @@ async function main() {
   if (error) throw error;
 
   const idBySlug = new Map(saved.map((s) => [s.slug!, s.id]));
-  const ids = [...idBySlug.values()];
-  const { error: clearError } = await db.from("question_boards").delete().in("question_id", ids);
-  if (clearError) throw clearError;
+  // Filters on many ids go in the URL, so send them in batches
+  for (const ids of chunks([...idBySlug.values()], 100)) {
+    const { error: clearError } = await db.from("question_boards").delete().in("question_id", ids);
+    if (clearError) throw clearError;
+  }
   const boardRows = questions.flatMap((q) =>
     q.boards === "all"
       ? []
@@ -108,14 +116,24 @@ async function main() {
     if (boardError) throw boardError;
   }
 
-  const { data: retired, error: retireError } = await db
+  const { data: published, error: listError } = await db
     .from("questions")
-    .update({ status: "draft" })
+    .select("id, slug")
     .not("slug", "is", null)
-    .not("slug", "in", `(${questions.map((q) => q.slug).join(",")})`)
-    .eq("status", "published")
-    .select("slug");
-  if (retireError) throw retireError;
+    .eq("status", "published");
+  if (listError) throw listError;
+  const inBank = new Set(questions.map((q) => q.slug));
+  const retired = published.filter((q) => !inBank.has(q.slug!));
+  for (const ids of chunks(
+    retired.map((q) => q.id),
+    100,
+  )) {
+    const { error: retireError } = await db
+      .from("questions")
+      .update({ status: "draft" })
+      .in("id", ids);
+    if (retireError) throw retireError;
+  }
 
   console.log(
     `Imported ${saved.length} questions` +

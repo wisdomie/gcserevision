@@ -28,7 +28,18 @@ export interface BankQuestion {
   solution: Solution;
 }
 
-const KINDS = ["integer", "decimal", "money", "fraction", "percentage", "ratio", "mcq"] as const;
+const KINDS = [
+  "integer",
+  "decimal",
+  "money",
+  "fraction",
+  "percentage",
+  "ratio",
+  "mcq",
+  "expression",
+  "solutions",
+  "standard-form",
+] as const;
 
 const RowSchema = z.object({
   slug: z.string().regex(/^[a-z0-9-]{3,60}$/),
@@ -46,7 +57,21 @@ const RowSchema = z.object({
   unit: z.string(),
   steps: z.string().min(1),
   final: z.string().min(1),
+  /** expression only: the form the answer must be in (default: any equivalent form). */
+  form: z.enum(["", "any", "expanded", "factorised", "simplified"]).optional().default(""),
+  /** solutions only: the letter being solved for (default x). */
+  variable: z
+    .string()
+    .regex(/^[a-z]?$/)
+    .optional()
+    .default(""),
 });
+
+/** The single-letter variables in a LaTeX expression, ignoring commands like \frac. */
+function variablesIn(latex: string): string[] {
+  const letters = latex.replace(/\\[a-zA-Z]+/g, "").match(/[a-zA-Z]/g) ?? [];
+  return [...new Set(letters)].sort();
+}
 
 /** "\n" in a CSV cell is a line break; " || " separates solution steps. */
 const unescape = (s: string) => s.replace(/\\n/g, "\n").trim();
@@ -82,6 +107,25 @@ function answerSpec(row: z.infer<typeof RowSchema>, options: string[] | null): A
     }
     case "ratio":
       return { kind: "ratio", parts: row.answer.split(":").map((p) => toNumber(p, "ratio part")) };
+    case "expression":
+      return {
+        kind: "expression",
+        latex: row.answer.trim(),
+        variables: variablesIn(row.answer),
+        ...(row.form ? { form: row.form } : {}),
+      };
+    case "solutions":
+      return {
+        kind: "solutions",
+        variable: row.variable || "x",
+        values: row.answer.split(";").map((v) => toNumber(v, "solution")),
+      };
+    case "standard-form": {
+      // Written as 3.2e5 in the CSV
+      const m = /^([+-]?\d+(?:\.\d+)?)e([+-]?\d+)$/.exec(row.answer.trim());
+      if (!m) throw new Error(`standard form answer must look like 3.2e5: "${row.answer}"`);
+      return { kind: "standardForm", mantissa: Number(m[1]), exponent: Number(m[2]) };
+    }
     case "mcq": {
       const correctIndex = options?.indexOf(unescape(row.answer)) ?? -1;
       if (correctIndex < 0) throw new Error(`mcq answer "${row.answer}" is not one of the options`);
