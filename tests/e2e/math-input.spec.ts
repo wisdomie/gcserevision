@@ -8,15 +8,24 @@ const anyForm = { kind: "expression", latex: "2x+4", variables: ["x"] };
 const factorised = { kind: "expression", latex: "2(x+2)", variables: ["x"], form: "factorised" };
 
 /** Starts a fresh session and swaps its first question's hidden answer to `spec`. */
-async function questionWithAnswer(page: Page, spec: object) {
-  const res = await page.request.post("/api/solo/start", {
-    data: { topicSlugs: ["expanding-factorising"], count: 5, timed: false },
-  });
-  expect(res.status()).toBe(201);
-  const { sessionId, current } = await res.json();
+async function questionWithAnswer(page: Page, spec: object, mathField = true) {
+  // The topic also has a multiple-choice word problem: start again until the
+  // first question is a typed one
+  let session: {
+    sessionId: string;
+    current: { question: { instanceId: string; inputType: string } };
+  };
+  do {
+    const res = await page.request.post("/api/solo/start", {
+      data: { topicSlugs: ["expanding-factorising"], count: 5, timed: false },
+    });
+    expect(res.status()).toBe(201);
+    session = await res.json();
+  } while (session.current.question.inputType !== "expression");
+  const { sessionId, current } = session;
   await setHiddenAnswer(current.question.instanceId, spec, "$2x + 4$");
   await page.goto(`/play/solo/${sessionId}`);
-  await expect(page.locator("math-field#answer")).toBeVisible();
+  if (mathField) await expect(page.locator("math-field#answer")).toBeVisible();
 }
 
 async function typeInMathField(page: Page, keys: string) {
@@ -57,8 +66,8 @@ test("players can switch to a plain text box, and the choice is remembered", asy
   await page.getByRole("button", { name: "Check answer" }).click();
   await expect(page.getByRole("heading", { level: 2, name: "Correct!" })).toBeVisible();
 
-  // The next question keeps the plain text box
-  await page.getByRole("button", { name: "Next question" }).click();
+  // The next typed question keeps the plain text box
+  await questionWithAnswer(page, anyForm, false);
   await expect(page.getByRole("textbox", { name: "Your answer" })).toBeVisible();
   await page.getByRole("button", { name: "Use the maths keyboard instead" }).click();
   await expect(page.locator("math-field#answer")).toBeVisible();
