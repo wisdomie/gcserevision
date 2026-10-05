@@ -74,8 +74,8 @@ export const trigMissingSide: QuestionGenerator = {
       const v = (s: Side) => (s === known ? `${knownValue}` : "x");
       const solved =
         top === unknown
-          ? `x = ${knownValue} \\times \\${fn} ${angle}°`
-          : `x = \\frac{${knownValue}}{\\${fn} ${angle}°}`;
+          ? `x = ${knownValue} \\times \\${fn} ${angle}^{\\circ}`
+          : `x = \\frac{${knownValue}}{\\${fn} ${angle}^{\\circ}}`;
       return {
         promptMd: `Work out the length of the side marked ${m("x")}.\n\nGive your answer correct to 1 decimal place.`,
         inputType: "numeric",
@@ -84,7 +84,7 @@ export const trigMissingSide: QuestionGenerator = {
         solution: {
           steps: [
             `You know the ${SIDE_NAME[known]} and want the ${SIDE_NAME[unknown]}, so use ${m(`\\${fn}`)}: ${m(`\\${fn} \\theta = \\frac{\\text{${SIDE_NAME[top]}}}{\\text{${SIDE_NAME[bottom]}}}`)}`,
-            `${m(`\\${fn} ${angle}° = \\frac{${v(top)}}{${v(bottom)}}`)}`,
+            `${m(`\\${fn} ${angle}^{\\circ} = \\frac{${v(top)}}{${v(bottom)}}`)}`,
             `${m(`${solved} = ${dp3(x)}\\ldots`)}`,
           ],
           final: `${dp1(x)} ${unit}`,

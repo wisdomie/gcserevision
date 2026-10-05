@@ -6,21 +6,25 @@ import { retry } from "../../util/retry";
 const SURVEYS = [
   {
     what: "favourite fruit",
+    intro: "the favourite fruit of a group of students",
     label: "Fruit",
     items: ["Apple", "Banana", "Grape", "Mango", "Pear", "Kiwi"],
   },
   {
     what: "favourite sport",
+    intro: "the favourite sport of a group of students",
     label: "Sport",
     items: ["Football", "Tennis", "Netball", "Rugby", "Hockey", "Golf"],
   },
   {
-    what: "way of getting to school",
+    what: "how students get to school",
+    intro: "how a group of students get to school",
     label: "Travel",
     items: ["Walk", "Bus", "Car", "Bike", "Train"],
   },
   {
     what: "favourite colour",
+    intro: "the favourite colour of a group of students",
     label: "Colour",
     items: ["Red", "Blue", "Green", "Yellow", "Purple"],
   },
@@ -51,7 +55,7 @@ export const barChart: QuestionGenerator = {
         y: { min: 0, max: top, step, label: "Frequency" },
         xLabel: survey.label,
       };
-      const intro = `The bar chart shows the ${survey.what} of a group of students.`;
+      const intro = `The bar chart shows ${survey.intro}.`;
       const kind = rng.int(0, 2);
 
       if (kind === 0) {
