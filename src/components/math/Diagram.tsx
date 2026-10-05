@@ -68,6 +68,7 @@ function Frame({
         viewBox={viewBox.join(" ")}
         // Drawn at 1 unit = 1px, shrinking only to fit, so text is the same size in every diagram
         width={viewBox[2]}
+        height={viewBox[3]}
         className="h-auto max-w-full"
         data-testid="question-diagram"
       >
@@ -216,7 +217,7 @@ function Graph({ d }: { d: GraphDiagram }) {
   const top = -height - 24;
 
   return (
-    <Frame alt={d.alt} viewBox={[left, top, width - left + 24, height - top + (grid ? 22 : 40)]}>
+    <Frame alt={d.alt} viewBox={[left, top, width - left + 24, (grid ? 22 : 40) - top]}>
       {xTicks.map((t) => (
         <line
           key={`gx${t}`}
@@ -235,6 +236,8 @@ function Graph({ d }: { d: GraphDiagram }) {
       <line x1={yAxisX} x2={yAxisX} y1={0} y2={-height} stroke={STROKE} strokeWidth={1.5} />
       {xTicks
         .filter((_, i) => i % labelEvery(xTicks, d.x.step * sx) === 0)
+        // On a coordinate grid the y-axis runs through x = 0: leave its label off
+        .filter((t) => !(grid && t === 0))
         .map((t) => (
           <Label key={`tx${t}`} x={X(t)} y={xAxisY + 12} text={String(t)} size={11} fill={MUTED} />
         ))}
@@ -307,7 +310,7 @@ function Bars({ d }: { d: BarDiagram }) {
   const top = -height - 26;
 
   return (
-    <Frame alt={d.alt} viewBox={[-36, top, width + 44, height - top + 40]}>
+    <Frame alt={d.alt} viewBox={[-36, top, width + 44, 40 - top]}>
       {yTicks.map((t) => (
         <g key={`t${t}`}>
           <line x1={0} x2={width} y1={Y(t)} y2={Y(t)} stroke={GRID} strokeWidth={1} />
