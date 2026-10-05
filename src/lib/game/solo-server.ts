@@ -19,6 +19,8 @@ import {
   type SoloSettings,
   type SoloStartInput,
 } from "./solo";
+import { planWithBank } from "./bank";
+import { loadBankGenerator, loadBankGenerators } from "./bank-server";
 import { DailySettingsSchema } from "./daily";
 import type { SoloAnswerResult, SoloCurrentQuestion, SoloState, SoloSummary } from "./solo-types";
 
@@ -85,7 +87,8 @@ async function serveQuestion(
   topics: Map<string, Topic>,
 ): Promise<SoloCurrentQuestion> {
   const planned = settings.plan[idx];
-  const gen = planned && getGenerator(planned.key);
+  const gen =
+    planned && (getGenerator(planned.key) ?? (await loadBankGenerator(admin, planned.key)));
   const topic = gen && topics.get(gen.topicSlug);
   if (!gen || !topic) throw new Error(`Cannot serve question ${idx} of session ${sessionId}`);
 
@@ -115,12 +118,14 @@ export async function startSoloSession(userId: string, input: SoloStartInput): P
   const player = await loadPlayer(admin, userId);
   const { subjectId, topics } = await loadSubjectAndTopics(admin);
 
-  const generators = listGenerators({
+  const filter = {
     tier: player.tier,
     board: player.board ?? undefined,
     topicSlugs: input.topicSlugs,
-  }).filter((g) => topics.has(g.topicSlug));
-  if (generators.length === 0)
+  };
+  const generators = listGenerators(filter).filter((g) => topics.has(g.topicSlug));
+  const bank = (await loadBankGenerators(admin, filter)).filter((g) => topics.has(g.topicSlug));
+  if (generators.length + bank.length === 0)
     throw new ApiError(400, "There are no questions for those topics yet.");
 
   const seed = randomSeed();
@@ -133,7 +138,12 @@ export async function startSoloSession(userId: string, input: SoloStartInput): P
     count: input.count,
     timed: input.timed,
     seed,
-    plan: planSoloSession(generators, input.count, player.tier, seed),
+    plan: planWithBank(
+      (pool, s) => planSoloSession(pool, input.count, player.tier, s),
+      generators,
+      bank,
+      seed,
+    ),
   };
 
   const { data: session, error } = await admin

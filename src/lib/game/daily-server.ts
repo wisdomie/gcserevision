@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 import { DAILY_COUNT, dailyDate, dailyEligible, planDaily, type DailySettings } from "./daily";
 import type { DailyAttempt, DailyBoardRow, DailyOverview } from "./daily-types";
+import { planWithBank } from "./bank";
+import { loadBankGenerators } from "./bank-server";
 import { publicPayload } from "./solo";
 import { loadSubjectAndTopics } from "./solo-server";
 
@@ -30,8 +32,13 @@ export async function ensureDailyChallenge(date: string, admin: Admin = createAd
 
   const { subjectId, topics } = await loadSubjectAndTopics(admin);
   const eligible = dailyEligible(listGenerators()).filter((g) => topics.has(g.topicSlug));
-  const questions = planDaily(eligible, randomSeed()).map((planned) => {
-    const gen = getGenerator(planned.key)!;
+  const bank = dailyEligible(await loadBankGenerators(admin, {})).filter((g) =>
+    topics.has(g.topicSlug),
+  );
+  const bankByKey = new Map(bank.map((g) => [g.key, g]));
+  const plan = planWithBank((pool, s) => planDaily(pool, s), eligible, bank, randomSeed());
+  const questions = plan.map((planned) => {
+    const gen = getGenerator(planned.key) ?? bankByKey.get(planned.key)!;
     const topic = topics.get(gen.topicSlug)!;
     const q = gen.generate(createRng(planned.seed));
     return {
