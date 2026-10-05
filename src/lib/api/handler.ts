@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { reportServerError } from "@/lib/monitoring/server";
 import { getUserId } from "@/lib/supabase/auth";
 
 /** An error with an HTTP status and a message that is safe to show players. */
@@ -7,6 +8,8 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    /** Seconds to wait before trying again (sent as Retry-After). */
+    readonly retryAfter?: number,
   ) {
     super(message);
   }
@@ -14,10 +17,17 @@ export class ApiError extends Error {
 
 export function errorResponse(error: unknown): Response {
   if (error instanceof ApiError)
-    return Response.json({ error: error.message }, { status: error.status });
+    return Response.json(
+      { error: error.message },
+      {
+        status: error.status,
+        headers: error.retryAfter ? { "Retry-After": String(error.retryAfter) } : undefined,
+      },
+    );
   if (error instanceof z.ZodError)
     return Response.json({ error: "Invalid request" }, { status: 400 });
   console.error(error);
+  void reportServerError(error);
   return Response.json({ error: "Something went wrong. Please try again." }, { status: 500 });
 }
 

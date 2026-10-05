@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { errorResponse } from "@/lib/api/handler";
 import { dailyDate } from "@/lib/game/daily";
 import { ensureDailyChallenge } from "@/lib/game/daily-server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -16,8 +17,8 @@ function authorised(request: Request): boolean {
 
 /**
  * Scheduled daily (vercel.json): makes sure today's and tomorrow's challenges
- * exist, so nobody waits for one to be generated at midnight. The daily page
- * also creates today's if this hasn't run.
+ * exist, so nobody waits for one to be generated at midnight, and prunes old
+ * rate-limit counters. The daily page also creates today's if this hasn't run.
  */
 export async function GET(request: Request) {
   if (!authorised(request)) return Response.json({ error: "Unauthorised" }, { status: 401 });
@@ -25,6 +26,9 @@ export async function GET(request: Request) {
     const now = Date.now();
     const dates = [dailyDate(new Date(now)), dailyDate(new Date(now + DAY_MS))];
     for (const date of dates) await ensureDailyChallenge(date);
+    // Housekeeping: old rate-limit windows
+    const { error } = await createAdminClient().rpc("prune_rate_limits");
+    if (error) throw error;
     return Response.json({ ok: true, dates });
   } catch (error) {
     return errorResponse(error);

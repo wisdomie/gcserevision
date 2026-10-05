@@ -77,9 +77,11 @@ test("rooms API: membership, host-only start, one answer each, deadlines and ide
   expect((await guest.request.get(`/api/rooms/${code}/reveal?idx=0`)).status()).toBe(409);
 
   // One answer each; the reply says nothing about correctness
+  // Typed answers get extra spaces (still marked right) so a leak of the text is easy to spot
+  const raw = await rawAnswerFor(question.instanceId, true);
   const answer = {
     instanceId: question.instanceId,
-    raw: await rawAnswerFor(question.instanceId, true),
+    raw: question.inputType === "mcq" ? raw : `  ${raw}  `,
   };
   const first = await guest.request.post(`/api/rooms/${code}/answer`, { data: answer });
   expect(first.status()).toBe(200);
@@ -127,7 +129,11 @@ test("rooms API: membership, host-only start, one answer each, deadlines and ide
   const guestResult = reveal.results.find((r: { answered: boolean }) => r.answered);
   expect(guestResult).toMatchObject({ correct: true });
   expect(guestResult.points).toBeGreaterThan(0);
-  expect(JSON.stringify(reveal)).not.toContain(answer.raw === "0" ? "\u0000" : `"${answer.raw}"`);
+  for (const r of reveal.results)
+    expect(Object.keys(r).sort()).toEqual(
+      ["answered", "avatar", "correct", "marksAwarded", "points", "userId", "username"].sort(),
+    );
+  if (question.inputType !== "mcq") expect(JSON.stringify(reveal)).not.toContain(answer.raw);
   const after = await (await host.request.get(`/api/rooms/${code}`)).json();
   expect(after.status).toBe("reveal");
   expect(after.players[0].score).toBe(guestResult.points);

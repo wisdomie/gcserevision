@@ -293,6 +293,8 @@ export type Database = {
           marks: number;
           options: Json | null;
           prompt_md: string;
+          slug: string | null;
+          solution: Json | null;
           solution_md: string;
           status: string;
           subject_id: number;
@@ -309,6 +311,8 @@ export type Database = {
           marks?: number;
           options?: Json | null;
           prompt_md: string;
+          slug?: string | null;
+          solution?: Json | null;
           solution_md: string;
           status?: string;
           subject_id: number;
@@ -325,6 +329,8 @@ export type Database = {
           marks?: number;
           options?: Json | null;
           prompt_md?: string;
+          slug?: string | null;
+          solution?: Json | null;
           solution_md?: string;
           status?: string;
           subject_id?: number;
@@ -792,6 +798,8 @@ export type Database = {
           username: string;
         }[];
       };
+      prune_rate_limits: { Args: Record<PropertyKey, never>; Returns: number };
+      rate_limit_check: { Args: { p_rules: Json }; Returns: number };
       record_room_answer: {
         Args: {
           p_idx: number;
