@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { MathInput } from "@/components/math/MathInput";
 import { MathInline } from "@/components/math/MathText";
 import type { InputType } from "@/lib/engine/types";
+import { mathToSpeech } from "@/lib/math/speech";
 
 const HINTS: Record<Exclude<InputType, "mcq">, string> = {
   numeric: "Type a number, e.g. 42 or 3.5",
@@ -43,6 +44,7 @@ export function AnswerInput({ inputType, options, value, onChange, onEnter, disa
               value={i}
               checked={value === String(i)}
               onChange={() => onChange(String(i))}
+              aria-label={mathToSpeech(opt)}
               className="size-4"
             />
             <span className="text-lg">
