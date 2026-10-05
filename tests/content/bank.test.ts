@@ -40,6 +40,8 @@ const record = (over: Record<string, string> = {}) => ({
   unit: "",
   steps: "First || Second",
   final: "12",
+  form: "",
+  variable: "",
   ...over,
 });
 
@@ -87,6 +89,66 @@ describe("bankQuestionFromRecord", () => {
     expect(bankQuestionFromRecord(record({ boards: "aqa;ocr" })).boards).toEqual(["aqa", "ocr"]);
   });
 
+  it("supports algebra answers", () => {
+    const expr = bankQuestionFromRecord(
+      record({
+        kind: "expression",
+        answer: "3(x + 2y)",
+        form: "factorised",
+        final: "$3(x + 2y)$",
+      }),
+    );
+    expect(expr).toMatchObject({
+      inputType: "expression",
+      answerSpec: {
+        kind: "expression",
+        latex: "3(x + 2y)",
+        variables: ["x", "y"],
+        form: "factorised",
+      },
+    });
+    // Commands such as \frac are not variables, and old CSVs have no form column
+    const noForm: Record<string, string> = record({
+      kind: "expression",
+      answer: "\\frac{a}{2}",
+      final: "$\\frac{a}{2}$",
+    });
+    delete noForm.form;
+    expect(bankQuestionFromRecord(noForm).answerSpec).toEqual({
+      kind: "expression",
+      latex: "\\frac{a}{2}",
+      variables: ["a"],
+    });
+    expect(
+      bankQuestionFromRecord(
+        record({ kind: "solutions", answer: "2;-5", final: "$x = 2$ or $x = -5$" }),
+      ).answerSpec,
+    ).toEqual({ kind: "solutions", variable: "x", values: [2, -5] });
+    expect(
+      bankQuestionFromRecord(
+        record({ kind: "solutions", answer: "4", variable: "t", final: "$t = 4$" }),
+      ).answerSpec,
+    ).toEqual({ kind: "solutions", variable: "t", values: [4] });
+    expect(() =>
+      bankQuestionFromRecord(
+        record({
+          kind: "expression",
+          answer: "x^2 + 5x + 6",
+          form: "factorised",
+          final: "$x^2 + 5x + 6$",
+        }),
+      ),
+    ).toThrow(/fails the checker/);
+    expect(
+      bankQuestionFromRecord(
+        record({ kind: "standard-form", answer: "3.2e-5", final: "$3.2 \\times 10^{-5}$" }),
+      ).answerSpec,
+    ).toEqual({ kind: "standardForm", mantissa: 3.2, exponent: -5 });
+    expect(() =>
+      bankQuestionFromRecord(record({ kind: "standard-form", answer: "32000", final: "32000" })),
+    ).toThrow(/3.2e5/);
+  });
+
   it("rejects mistakes", () => {
     expect(() => bankQuestionFromRecord(record({ final: "13" }))).toThrow(/fails the checker/);
     expect(() =>
@@ -109,9 +171,15 @@ describe("the word-problem bank", () => {
   const seed = readFileSync(join(__dirname, "..", "..", "supabase", "seed.sql"), "utf8");
   const generatedTopics = new Set(listGenerators().map((g) => g.topicSlug));
 
-  it("has about 100 valid questions", () => {
+  it("has about 250 valid questions", () => {
     expect(errors).toEqual([]);
-    expect(questions.length).toBeGreaterThanOrEqual(100);
+    expect(questions.length).toBeGreaterThanOrEqual(240);
+  });
+
+  it("has at least 6 questions for every topic it covers", () => {
+    const counts = new Map<string, number>();
+    for (const q of questions) counts.set(q.topicSlug, (counts.get(q.topicSlug) ?? 0) + 1);
+    for (const [topic, n] of counts) expect(n, topic).toBeGreaterThanOrEqual(6);
   });
 
   it("uses seeded topics that already have generated questions", () => {
