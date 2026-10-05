@@ -387,16 +387,16 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
     keyboard has a low-contrast key; the plain text box is always available instead.
 - **Lighthouse (mobile, production build, local):**
 
-  | Page | Performance | Accessibility | Best practices | SEO |
-  | --- | --- | --- | --- | --- |
-  | `/login` | 99 | 100 | 100 | 100 |
-  | `/play` | 97 | 100 | 100 | 100 |
-  | solo question | 95 | 100 | 100 | 100 |
-  | `/leaderboard` | 100 | 100 | 100 | 100 |
-  | `/play/daily` | 94 | 100 | 100 | 100 |
-
+  | Page           | Performance | Accessibility | Best practices | SEO |
+  | -------------- | ----------- | ------------- | -------------- | --- |
+  | `/login`       | 99          | 100           | 100            | 100 |
+  | `/play`        | 97          | 100           | 100            | 100 |
+  | solo question  | 95          | 100           | 100            | 100 |
+  | `/leaderboard` | 100         | 100           | 100            | 100 |
+  | `/play/daily`  | 94          | 100           | 100            | 100 |
   - Fixes: a `favicon.ico` (its 404 was a console error), and the daily page only loads the
     question player once an attempt starts (90 → 94).
+
 - **Before launch, set** `RATE_LIMIT_SECRET`, and optionally `SENTRY_DSN` and
   `NEXT_PUBLIC_SENTRY_DSN`, in Vercel. Then run `pnpm import:questions` against the
   production database.
