@@ -2,7 +2,7 @@
 // fails, players see /offline instead of the browser's error page. Hashed
 // build assets are cached as they load, so the offline page keeps its styles.
 // API responses are never cached: marking must always be live.
-const CACHE = "ppg-shell-v1";
+const CACHE = "ppg-shell-v2";
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
@@ -30,7 +30,18 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
+    event.respondWith(
+      fetch(request).catch(() =>
+        // Show /offline at its own address (so the app's router doesn't treat it as the
+        // page it replaced), remembering where to go back to
+        url.pathname === OFFLINE_URL
+          ? caches.match(OFFLINE_URL)
+          : Response.redirect(
+              `${OFFLINE_URL}?from=${encodeURIComponent(url.pathname + url.search)}`,
+              303,
+            ),
+      ),
+    );
     return;
   }
 
