@@ -15,6 +15,7 @@ import {
 
 export interface BankQuestion {
   slug: string;
+  subjectSlug: string;
   topicSlug: string;
   tier: "foundation" | "higher" | "both";
   calculator: CalcMode;
@@ -39,10 +40,17 @@ const KINDS = [
   "expression",
   "solutions",
   "standard-form",
+  "keywords",
 ] as const;
 
 const RowSchema = z.object({
   slug: z.string().regex(/^[a-z0-9-]{3,60}$/),
+  /** Optional column: the subject the topic belongs to (default maths). */
+  subject: z
+    .string()
+    .regex(/^[a-z0-9-]*$/)
+    .optional()
+    .default(""),
   topic: z.string().regex(/^[a-z0-9-]{1,60}$/),
   tier: z.enum(["foundation", "higher", "both"]),
   calculator: z.enum(["calc", "non-calc", "either"]),
@@ -65,6 +73,14 @@ const RowSchema = z.object({
     .regex(/^[a-z]?$/)
     .optional()
     .default(""),
+  /** keywords only: how many marking points earn full marks (default: all). */
+  need: z.string().regex(/^\d*$/).optional().default(""),
+  /** keywords only: |-separated phrases that make an answer wrong. */
+  reject: z.string().optional().default(""),
+  /** Optional: |-separated wrong answers the marker must not accept, as a check on the row. */
+  wrong: z.string().optional().default(""),
+  /** Optional: |-separated other right answers the marker must accept in full. */
+  right: z.string().optional().default(""),
 });
 
 /** The single-letter variables in a LaTeX expression, ignoring commands like \frac. */
@@ -126,6 +142,28 @@ function answerSpec(row: z.infer<typeof RowSchema>, options: string[] | null): A
       if (!m) throw new Error(`standard form answer must look like 3.2e5: "${row.answer}"`);
       return { kind: "standardForm", mantissa: Number(m[1]), exponent: Number(m[2]) };
     }
+    case "keywords": {
+      // Marking points separated by ";", accepted alternatives by "|"
+      const groups = row.answer
+        .split(";")
+        .map((g) =>
+          g
+            .split("|")
+            .map((p) => p.trim())
+            .filter(Boolean),
+        )
+        .filter((g) => g.length > 0);
+      const reject = row.reject
+        .split("|")
+        .map((p) => p.trim())
+        .filter(Boolean);
+      return {
+        kind: "keywords",
+        groups,
+        ...(row.need ? { need: Number(row.need) } : {}),
+        ...(reject.length ? { reject } : {}),
+      };
+    }
     case "mcq": {
       const correctIndex = options?.indexOf(unescape(row.answer)) ?? -1;
       if (correctIndex < 0) throw new Error(`mcq answer "${row.answer}" is not one of the options`);
@@ -165,9 +203,24 @@ export function bankQuestionFromRecord(record: Record<string, string>): BankQues
     throw new Error(`${row.slug}: the final answer "${solution.final}" fails the checker`);
   if (spec.kind === "mcq" && options![spec.correctIndex] !== solution.final)
     throw new Error(`${row.slug}: final must equal the correct option`);
+  for (const r of row.right
+    .split("|")
+    .map((x) => x.trim())
+    .filter(Boolean)) {
+    if (!check(spec, r, row.marks).correct)
+      throw new Error(`${row.slug}: the right answer "${r}" is not marked correct`);
+  }
+  for (const w of row.wrong
+    .split("|")
+    .map((x) => x.trim())
+    .filter(Boolean)) {
+    if (check(spec, w, row.marks).correct)
+      throw new Error(`${row.slug}: the wrong answer "${w}" is marked correct`);
+  }
 
   return {
     slug: row.slug,
+    subjectSlug: row.subject || "maths",
     topicSlug: row.topic,
     tier: row.tier,
     calculator: row.calculator,

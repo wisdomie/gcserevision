@@ -7,6 +7,7 @@ import { planSoloSession } from "@/lib/game/solo";
 const row = (id: string, topicSlug: string, over: Partial<BankRow> = {}): BankRow => ({
   id,
   slug: id,
+  subjectSlug: "maths",
   topicSlug,
   tier: "both",
   calculator: "non-calc",

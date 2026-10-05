@@ -428,3 +428,64 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
     own computer or has to paste keys anywhere else.
   - It never runs automatically, so production only changes when someone chooses to update
     it.
+
+## M9
+
+- **Biology is the second subject.** AI marking of longer answers is left for later, as the
+  user asked.
+- **Reference data in a migration:** the subject and its 23 topics are in
+  `supabase/migrations/20261010000000_biology.sql`, not `seed.sql`, because the seed only runs
+  on a project's first deploy.
+  - The migration also inserts maths if it's missing, and the seed now skips maths if it's
+    there. So subject ids are the same locally and in production.
+- **Topics and strands:**
+  - The topics follow the content shared by the AQA, Edexcel and OCR Biology and Combined
+    Science specifications.
+  - They're grouped into AQA's seven sections, used as strands.
+  - Separate-Biology-only content (the brain, the eye, kidneys, monoclonal antibodies and
+    so on) is left out, so every question suits Combined Science students too.
+- **Topic slugs:** topic slugs never repeat across subjects. Games match questions to topics
+  by slug, and a test checks this.
+- **Keyword answers:** a new `keywords` answer kind for recall questions, typed in a plain
+  text box (`text` input).
+  - Each marking point is a list of accepted words or phrases, and an answer gets a mark per
+    point made. `need` sets how many points earn full marks.
+  - `reject` phrases score zero, so listing every term you can think of doesn't pay.
+    - "Mitosis or meiosis" is wrong.
+    - "Heart rate decreases" is wrong for an exercise question.
+  - Matching is forgiving about form:
+    - case, punctuation and plurals are ignored;
+    - one slip is allowed in words of 6 or more letters;
+    - "a ... b" allows a few words in between.
+  - It's strict about meaning: whole words only, so "aerobic" never matches inside
+    "anaerobic", and the order of phrases counts.
+  - Spelling slips in short words aren't forgiven automatically, because "cell"/"cel" is fine
+    but "lh"/"fsh" are different hormones. Common misspellings are listed as alternatives
+    instead.
+- **Checked examples in each row:** bank CSVs can list `right` and `wrong` sample answers.
+  The importer checks each one against the real marker, so a change to the matcher or a
+  row can't quietly break marking.
+- **Accuracy of the 156 Biology questions:**
+  - They're original, with every number computed by a script.
+  - An independent review re-checked the science, the tiers, and the marking with 610 trial
+    answers.
+  - Its fixes were applied. These were mostly extra accepted phrasings ("heart pumps
+    faster", "spinal chord", "weak virus") and a few wrong answers that had been accepted
+    ("heart rate decreases", "let blood flow backwards").
+  - Higher-only content (glucagon, adrenaline, oxygen debt, the inverse square law) is
+    tagged `higher`.
+- **Choosing a subject:**
+  - Solo practice and rooms have a Maths/Biology switch (`?subject=biology`), and a
+    "Practise Biology" button sits on the hub.
+  - Sessions and rooms store their subject.
+  - The daily challenge stays Maths-only, so everyone's streak means the same thing.
+- **The topic picker for bank-only subjects:** it uses
+  `topics_with_questions(subject, tier, board)`, a security-definer function that returns
+  only topic slugs. Pages still never read the questions or use the service role.
+- **Calculator label:** it's hidden outside Maths, where it means nothing.
+- **Test fixes found along the way:**
+  - Since the bank grew, every diagram topic also has hand-written questions without
+    charts. The diagram room test now makes rooms until the first question has a chart, up
+    to 8 times (players can create 10 rooms in 10 minutes).
+  - The room and solo tests look for the "Answer:" label exactly, because a worked solution
+    can contain the same words.

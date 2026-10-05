@@ -48,19 +48,37 @@ test("a Foundation player answers geometry questions with diagrams", async ({ pa
 
 test("live room players see the same chart", async ({ page: host, browser }) => {
   await signUp(host);
-  const created = await host.request.post("/api/rooms", {
-    data: {
-      mode: "room",
-      board: null,
-      tier: "higher",
-      // Topics without hand-written questions, so every question has a diagram
-      topicSlugs: ["scatter-graphs", "straight-line-graphs"],
-      questionCount: 3,
-      secondsPerQuestion: 30,
-    },
-  });
-  expect(created.status()).toBe(201);
-  const { code } = await created.json();
+  // These topics also have hand-written questions without charts, so make
+  // rooms until the first question is a generated one with a chart
+  let code = "";
+  // (at most 8 tries: players can create 10 rooms in 10 minutes)
+  for (let attempt = 0; attempt < 8 && !code; attempt++) {
+    const created = await host.request.post("/api/rooms", {
+      data: {
+        mode: "room",
+        board: null,
+        tier: "higher",
+        topicSlugs: ["scatter-graphs", "straight-line-graphs"],
+        questionCount: 3,
+        secondsPerQuestion: 30,
+      },
+    });
+    expect(created.status()).toBe(201);
+    const candidate = (await created.json()).code as string;
+    const { data } = await adminClient()
+      .from("rooms")
+      .select("room_questions(idx, question_instances(public_payload))")
+      .eq("code", candidate)
+      .single();
+    const first = (
+      data!.room_questions as unknown as {
+        idx: number;
+        question_instances: { public_payload: { diagram?: unknown } };
+      }[]
+    ).find((q) => q.idx === 0);
+    if (first?.question_instances.public_payload.diagram) code = candidate;
+  }
+  expect(code, "no room started with a chart").not.toBe("");
   const guestContext = await browser.newContext({ viewport: { width: 360, height: 740 } });
   const guest = await guestContext.newPage();
   await signUp(guest);
