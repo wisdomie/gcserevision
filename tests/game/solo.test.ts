@@ -95,6 +95,7 @@ describe("toPublicQuestion", () => {
           "promptMd",
           "topicName",
           ...(q.options ? ["options"] : []),
+          ...(q.diagram ? ["diagram"] : []),
         ].sort(),
       );
     }

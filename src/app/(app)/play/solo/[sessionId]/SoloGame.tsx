@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnswerInput } from "@/components/game/AnswerInput";
 import { Timer } from "@/components/game/Timer";
+import { Diagram } from "@/components/math/Diagram";
 import { MathInline, MathText } from "@/components/math/MathText";
 import { Alert } from "@/components/ui/Alert";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -149,6 +150,7 @@ export function SoloGame({
         </div>
 
         <MathText text={q.promptMd} className="text-lg" />
+        {q.diagram && <Diagram diagram={q.diagram} />}
 
         <form
           onSubmit={(e) => {
