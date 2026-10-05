@@ -348,6 +348,10 @@ Judgement calls made where `PLAN.md` was ambiguous or reality differed (PLAN.md 
     `scripts/make-icons.mjs`.
   - The service worker (`public/sw.js`) loads pages from the network and shows `/offline`
     when that fails.
+    - It redirects to `/offline?from=<page>` rather than serving the offline page at the
+      failed page's address. Otherwise Next's router can render a stale prefetched copy of
+      that page.
+    - "Try again" goes back to `from`, checked with `safeRedirectPath`.
   - It caches hashed build assets so the offline page keeps its styles. It never caches API
     responses, because marking must be live.
   - It's registered only in production builds.
