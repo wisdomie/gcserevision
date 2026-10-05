@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Diagram } from "./diagram";
 
 export type Tier = "foundation" | "higher";
 export type CalcMode = "calc" | "non-calc" | "either";
@@ -131,6 +132,8 @@ export interface GeneratedQuestion {
   inputType: InputType;
   /** mcq only (already shuffled) */
   options?: string[];
+  /** A picture the question needs. Must not give the answer away. */
+  diagram?: Diagram;
   answerSpec: AnswerSpec;
   solution: Solution;
 }
@@ -157,6 +160,7 @@ export interface PublicQuestion {
   promptMd: string;
   inputType: InputType;
   options?: string[];
+  diagram?: Diagram;
   marks: number;
   calculator: CalcMode;
   topicName: string;

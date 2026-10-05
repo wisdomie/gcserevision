@@ -101,6 +101,7 @@ export function publicPayload(
     promptMd: q.promptMd,
     inputType: q.inputType,
     ...(q.options ? { options: q.options } : {}),
+    ...(q.diagram ? { diagram: q.diagram } : {}),
     marks: gen.marks,
     calculator: gen.calculator,
     topicName,

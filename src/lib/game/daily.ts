@@ -49,11 +49,7 @@ export type DailySettings = z.infer<typeof DailySettingsSchema>;
  */
 export function dailyEligible(generators: readonly QuestionGenerator[]): QuestionGenerator[] {
   return generators.filter(
-    (g) =>
-      g.tiers.includes("foundation") &&
-      g.tiers.includes("higher") &&
-      g.boards === "all" &&
-      !g.needsDiagram,
+    (g) => g.tiers.includes("foundation") && g.tiers.includes("higher") && g.boards === "all",
   );
 }
 

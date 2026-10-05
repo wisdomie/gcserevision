@@ -248,6 +248,16 @@ describe("decimal", () => {
     ok(u, "7.5\\text{ cm}");
     no(u, "7.5 kg", FEEDBACK.unreadable);
   });
+  it("accepts squared units however they're typed", () => {
+    const area: AnswerSpec = { kind: "decimal", value: 48, unit: "cm²" };
+    for (const raw of ["48", "48 cm²", "48cm^2", "48 cm^{2}", "48\\text{cm}^2", "48 cm2"])
+      ok(area, raw);
+    no(area, "48 m²", FEEDBACK.unreadable);
+  });
+  it("accepts degrees from the keyboard or the maths field", () => {
+    const angle: AnswerSpec = { kind: "decimal", value: 67, unit: "°" };
+    for (const raw of ["67", "67°", "67^{\\circ}", "67^\\circ", "67\\degree"]) ok(angle, raw);
+  });
   it("exact value with no rounding", () => {
     ok({ kind: "decimal", value: 0.3 }, "0.3");
     no({ kind: "decimal", value: 0.3 }, "0.33");

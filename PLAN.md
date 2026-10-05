@@ -643,8 +643,8 @@ Each milestone ends with: tests passing, checklist ticked here, and a commit.
 - [x] Shareable result card (a text summary the user can copy)
 
 ### M7: Diagrams and geometry/statistics topics
-- [ ] A diagram component (inline SVG, or JSXGraph) with a typed `diagram` field on `GeneratedQuestion`
-- [ ] Generators for angles, Pythagoras, area, trigonometry, straight-line graphs, charts, scatter graphs
+- [x] A diagram component (inline SVG, or JSXGraph) with a typed `diagram` field on `GeneratedQuestion`
+- [x] Generators for angles, Pythagoras, area, trigonometry, straight-line graphs, charts, scatter graphs
 
 ### M8: Polish and hardening
 - [ ] PWA manifest and offline shell
