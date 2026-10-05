@@ -19,6 +19,7 @@ import {
   parseExpression,
   stripSubject,
 } from "./expression";
+import { matchKeywords } from "./keywords";
 
 export const FEEDBACK = {
   unreadable: "Could not read your answer",
@@ -30,6 +31,7 @@ export const FEEDBACK = {
   expand: "Expand the brackets and simplify fully",
   factorise: "Factorise your answer fully",
   unsupported: "This answer type can't be marked yet",
+  contradicts: "Your answer includes something that is wrong",
 } as const;
 
 const wrong = (feedback?: string): CheckResult =>
@@ -46,6 +48,8 @@ export function check(spec: AnswerSpec, raw: string, marks = 1): CheckResult {
     if (typeof raw !== "string" || raw.length > MAX_ANSWER_LENGTH)
       return wrong(FEEDBACK.unreadable);
     if (spec.kind === "multi") return checkMulti(spec, raw, marks);
+    // Written answers skip the maths normalisation
+    if (spec.kind === "keywords") return checkKeywords(spec, raw, marks);
     const s = normalise(raw);
     if (!s) return wrong(FEEDBACK.unreadable);
     return checkNormalised(spec, s, marks);
@@ -169,6 +173,7 @@ function checkNormalised(spec: AnswerSpec, s: string, marks: number): CheckResul
     }
 
     case "multi":
+    case "keywords":
       // Handled before normalisation in check().
       return wrong(FEEDBACK.unsupported);
   }
@@ -191,6 +196,26 @@ export function marksForParts(count: number, marks: number, marksPerPart?: numbe
 }
 
 /** Multi-part answers arrive as a JSON array of strings, one per part. */
+function checkKeywords(
+  spec: Extract<AnswerSpec, { kind: "keywords" }>,
+  raw: string,
+  marks: number,
+): CheckResult {
+  if (!raw.trim()) return wrong(FEEDBACK.unreadable);
+  const { matched, rejected } = matchKeywords(raw, spec);
+  if (rejected) return wrong(FEEDBACK.contradicts);
+  const need = spec.need ?? spec.groups.length;
+  if (matched >= need) return right(marks);
+  // A mark for each point made, as in a mark scheme
+  const awarded = Math.floor((marks * matched) / need);
+  if (matched === 0) return wrong();
+  return {
+    correct: false,
+    marksAwarded: awarded,
+    feedback: `${matched} of ${need} key points`,
+  };
+}
+
 function checkMulti(
   spec: Extract<AnswerSpec, { kind: "multi" }>,
   raw: string,

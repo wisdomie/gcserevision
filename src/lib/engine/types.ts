@@ -49,7 +49,19 @@ export type AnswerSpec =
   | { kind: "solutions"; variable: string; values: number[] }
   | { kind: "ratio"; parts: number[] }
   | { kind: "standardForm"; mantissa: number; exponent: number }
-  | { kind: "multi"; parts: { label: string; spec: AnswerSpec }[]; marksPerPart?: number[] };
+  | { kind: "multi"; parts: { label: string; spec: AnswerSpec }[]; marksPerPart?: number[] }
+  | {
+      /**
+       * A short written answer marked on key terms (PLAN.md M9). Each group is a
+       * list of accepted words or phrases for one marking point; `need` groups
+       * earn full marks (default: all). An answer containing a `reject` phrase
+       * scores nothing, so listing every possible term doesn't pay.
+       */
+      kind: "keywords";
+      groups: string[][];
+      need?: number;
+      reject?: string[];
+    };
 
 export type AnswerKind = AnswerSpec["kind"];
 
@@ -91,6 +103,17 @@ export const AnswerSpecSchema: z.ZodType<AnswerSpec> = z.lazy(() =>
     }),
     z.object({ kind: z.literal("ratio"), parts: z.array(finite).min(2) }),
     z.object({ kind: z.literal("standardForm"), mantissa: finite, exponent: int }),
+    z
+      .object({
+        kind: z.literal("keywords"),
+        groups: z
+          .array(z.array(z.string().min(1).max(60)).min(1).max(30))
+          .min(1)
+          .max(6),
+        need: int.min(1).optional(),
+        reject: z.array(z.string().min(1).max(60)).max(12).optional(),
+      })
+      .refine((s) => s.need === undefined || s.need <= s.groups.length, "need > groups"),
     z.object({
       kind: z.literal("multi"),
       parts: z.array(z.object({ label: z.string().min(1), spec: AnswerSpecSchema })).min(1),
@@ -103,7 +126,7 @@ export const AnswerSpecSchema: z.ZodType<AnswerSpec> = z.lazy(() =>
 // Questions
 // ---------------------------------------------------------------------------
 
-export type InputType = "mcq" | "numeric" | "expression" | "fraction" | "multi";
+export type InputType = "mcq" | "numeric" | "expression" | "fraction" | "multi" | "text";
 
 /** The input type a player answers with for each AnswerSpec kind. */
 export const INPUT_TYPE_FOR_KIND: Record<AnswerKind, InputType> = {
@@ -117,6 +140,7 @@ export const INPUT_TYPE_FOR_KIND: Record<AnswerKind, InputType> = {
   ratio: "expression",
   standardForm: "expression",
   multi: "multi",
+  keywords: "text",
 };
 
 export interface Solution {
