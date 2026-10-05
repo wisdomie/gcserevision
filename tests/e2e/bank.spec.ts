@@ -32,3 +32,30 @@ test("word problems from the question bank turn up in solo practice", async ({ p
   expect(keys).toHaveLength(10);
   expect(keys.some((k) => k.startsWith("bank:"))).toBe(true);
 });
+
+test("hand-written algebra questions take typed expressions", async ({ page }) => {
+  await signUp(page, { tier: "Higher" });
+  await page.getByRole("link", { name: "Start practising" }).click();
+  await page.getByRole("checkbox", { name: "Rearranging formulae" }).check();
+  await page.getByRole("button", { name: /^Start \(1 topic\)$/ }).click();
+  await expect(page).toHaveURL(/\/play\/solo\/[0-9a-f-]{36}$/);
+  const sessionId = page.url().split("/").pop()!;
+
+  for (let i = 1; i <= 10; i++) {
+    await expect(page.getByText(`Question ${i} of 10`)).toBeVisible();
+    await answerOnScreen(page, true);
+    await page.getByRole("button", { name: "Check answer" }).click();
+    await expect(page.getByRole("heading", { level: 2, name: "Correct!" })).toBeVisible();
+    await page.getByRole("button", { name: i < 10 ? "Next question" : "See results" }).click();
+  }
+  await expect(page.getByText("10 / 10", { exact: true }).first()).toBeVisible();
+
+  const { data } = await adminClient()
+    .from("solo_session_questions")
+    .select("question_instances(generator_key)")
+    .eq("session_id", sessionId);
+  const keys = (data ?? []).map(
+    (r) => (r.question_instances as unknown as { generator_key: string }).generator_key,
+  );
+  expect(keys.some((k) => k.startsWith("bank:"))).toBe(true);
+});
