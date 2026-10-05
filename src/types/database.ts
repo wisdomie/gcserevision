@@ -792,6 +792,8 @@ export type Database = {
           username: string;
         }[];
       };
+      prune_rate_limits: { Args: Record<PropertyKey, never>; Returns: number };
+      rate_limit_check: { Args: { p_rules: Json }; Returns: number };
       record_room_answer: {
         Args: {
           p_idx: number;
