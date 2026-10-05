@@ -11,8 +11,10 @@ insert into public.exam_boards (slug, name) values
   ('ocr', 'OCR'),
   ('wjec-eduqas', 'WJEC Eduqas');
 
+-- Also inserted by the biology migration, so subject ids match production
 insert into public.subjects (slug, name, is_active) values
-  ('maths', 'Mathematics', true);
+  ('maths', 'Mathematics', true)
+on conflict (slug) do nothing;
 
 -- Topics. Higher-only topics have min_tier = 'higher'; topics where a diagram
 -- is essential have needs_diagram = true (deferred to M7).

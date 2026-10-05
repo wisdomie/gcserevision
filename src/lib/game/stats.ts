@@ -3,6 +3,8 @@
 export interface TopicStat {
   slug: string;
   name: string;
+  /** The topic's subject, for practice links (maths when not given). */
+  subject?: string;
   attempts: number;
   correct: number;
 }

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { BoardSlug, Tier } from "@/lib/engine/types";
 import type { RoomMode } from "@/lib/game/room";
+import type { SubjectSlug } from "@/lib/game/subjects";
 import type { TopicGroup } from "@/lib/game/topic-groups";
 
 const COUNTS = [5, 10, 15, 20] as const;
@@ -54,11 +55,13 @@ function Choices<T extends string | number>({
 }
 
 export function RoomSetupForm({
+  subject,
   tier: myTier,
   board,
   boardGroups,
   mixedGroups,
 }: {
+  subject: SubjectSlug;
   tier: Tier;
   board: { slug: BoardSlug; name: string } | null;
   boardGroups: TopicGroup[];
@@ -87,6 +90,7 @@ export function RoomSetupForm({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         mode,
+        subject,
         board: boardChoice === "mine" ? board?.slug : null,
         tier,
         topicSlugs,

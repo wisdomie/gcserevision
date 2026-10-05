@@ -27,7 +27,11 @@ function TopicList({ topics, tone }: { topics: RankedTopic[]; tone: "strong" | "
           </div>
           {tone === "weak" && (
             <Link
-              href={`/play/solo?topics=${t.slug}`}
+              href={
+                t.subject && t.subject !== "maths"
+                  ? `/play/solo?subject=${t.subject}&topics=${t.slug}`
+                  : `/play/solo?topics=${t.slug}`
+              }
               className="text-accent min-h-11 shrink-0 content-center rounded-xl px-3 text-sm font-semibold underline"
             >
               Practise
@@ -44,12 +48,20 @@ export default async function ProfilePage() {
   const supabase = await createClient();
   const [{ data: boards }, { data: stats }] = await Promise.all([
     supabase.from("exam_boards").select("slug, name").order("name"),
-    supabase.from("topic_stats").select("attempts, correct, topics(slug, name)"),
+    supabase.from("topic_stats").select("attempts, correct, topics(slug, name, subjects(slug))"),
   ]);
   const report = topicReport(
     (stats ?? []).flatMap((s) =>
       s.topics
-        ? [{ slug: s.topics.slug, name: s.topics.name, attempts: s.attempts, correct: s.correct }]
+        ? [
+            {
+              slug: s.topics.slug,
+              name: s.topics.name,
+              subject: s.topics.subjects?.slug,
+              attempts: s.attempts,
+              correct: s.correct,
+            },
+          ]
         : [],
     ),
   );

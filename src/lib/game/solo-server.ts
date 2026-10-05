@@ -35,20 +35,20 @@ const SessionSettingsSchema = z.discriminatedUnion("mode", [
 /** Our payloads are plain JSON objects; the generated DB types need the cast. */
 const asJson = (value: object) => value as unknown as Json;
 
-const SUBJECT = "maths";
-
 interface Topic {
   id: number;
   name: string;
 }
 
-export async function loadSubjectAndTopics(admin: Admin) {
+export async function loadSubjectAndTopics(admin: Admin, slug = "maths") {
   const { data: subject, error } = await admin
     .from("subjects")
     .select("id")
-    .eq("slug", SUBJECT)
-    .single();
-  if (error || !subject) throw new Error(`Subject ${SUBJECT} missing: ${error?.message}`);
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (error) throw error;
+  if (!subject) throw new ApiError(400, "That subject isn't available.");
   const { data: topics, error: topicsError } = await admin
     .from("topics")
     .select("id, slug, name")
@@ -116,7 +116,7 @@ async function serveQuestion(
 export async function startSoloSession(userId: string, input: SoloStartInput): Promise<SoloState> {
   const admin = createAdminClient();
   const player = await loadPlayer(admin, userId);
-  const { subjectId, topics } = await loadSubjectAndTopics(admin);
+  const { subjectId, topics } = await loadSubjectAndTopics(admin, input.subject);
 
   const filter = {
     tier: player.tier,
@@ -124,14 +124,16 @@ export async function startSoloSession(userId: string, input: SoloStartInput): P
     topicSlugs: input.topicSlugs,
   };
   const generators = listGenerators(filter).filter((g) => topics.has(g.topicSlug));
-  const bank = (await loadBankGenerators(admin, filter)).filter((g) => topics.has(g.topicSlug));
+  const bank = (await loadBankGenerators(admin, filter, input.subject)).filter((g) =>
+    topics.has(g.topicSlug),
+  );
   if (generators.length + bank.length === 0)
     throw new ApiError(400, "There are no questions for those topics yet.");
 
   const seed = randomSeed();
   const settings: SoloSettings = {
     mode: "solo",
-    subject: SUBJECT,
+    subject: input.subject,
     board: player.board,
     tier: player.tier,
     topicSlugs: input.topicSlugs,
@@ -156,6 +158,7 @@ export async function startSoloSession(userId: string, input: SoloStartInput): P
   const current = await serveQuestion(admin, session.id, settings, 0, subjectId, topics);
   return {
     sessionId: session.id,
+    subject: settings.subject,
     count: settings.count,
     timed: settings.timed,
     secondsPerQuestion: SOLO_SECONDS_PER_QUESTION,
@@ -279,7 +282,7 @@ export async function submitSoloAnswer(
     // A daily attempt's questions are linked when it starts
     next = await linkedQuestion(admin, session.id, link.idx + 1);
   } else {
-    const { subjectId, topics } = await loadSubjectAndTopics(admin);
+    const { subjectId, topics } = await loadSubjectAndTopics(admin, session.settings.subject);
     next = await serveQuestion(
       admin,
       session.id,
@@ -333,6 +336,7 @@ export async function getSoloState(userId: string, sessionId: string): Promise<S
 
   return {
     sessionId: session.id,
+    subject: session.settings.subject,
     count: session.settings.count,
     timed: session.settings.timed,
     secondsPerQuestion: SOLO_SECONDS_PER_QUESTION,

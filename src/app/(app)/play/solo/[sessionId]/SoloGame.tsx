@@ -119,7 +119,10 @@ export function SoloGame({
     );
   }
   if (view.kind === "finished" && onFinished) return <p role="status">Loading your results…</p>;
-  if (view.kind === "finished") return <Results summary={view.summary} headingRef={headingRef} />;
+  const playAgainHref =
+    state && state.subject !== "maths" ? `/play/solo?subject=${state.subject}` : "/play/solo";
+  if (view.kind === "finished")
+    return <Results summary={view.summary} headingRef={headingRef} playAgainHref={playAgainHref} />;
 
   const { current } = view;
   const q = current.question;
@@ -145,13 +148,16 @@ export function SoloGame({
           <span className="border-border rounded-full border px-2 py-0.5">
             {q.marks} mark{q.marks > 1 ? "s" : ""}
           </span>
-          <span className="border-border rounded-full border px-2 py-0.5">
-            {q.calculator === "non-calc"
-              ? "Non-calculator"
-              : q.calculator === "calc"
-                ? "Calculator"
-                : "Calculator allowed"}
-          </span>
+          {/* Calculators only matter in maths */}
+          {state?.subject === "maths" && (
+            <span className="border-border rounded-full border px-2 py-0.5">
+              {q.calculator === "non-calc"
+                ? "Non-calculator"
+                : q.calculator === "calc"
+                  ? "Calculator"
+                  : "Calculator allowed"}
+            </span>
+          )}
         </div>
 
         <MathText text={q.promptMd} className="text-lg" />
@@ -240,9 +246,11 @@ function Feedback({
 function Results({
   summary,
   headingRef,
+  playAgainHref,
 }: {
   summary: SoloSummary;
   headingRef: React.RefObject<HTMLHeadingElement | null>;
+  playAgainHref: string;
 }) {
   const message =
     summary.correct === summary.total
@@ -299,7 +307,7 @@ function Results({
       </Card>
 
       <div className="grid gap-2 sm:grid-cols-2">
-        <ButtonLink href="/play/solo">Play again</ButtonLink>
+        <ButtonLink href={playAgainHref}>Play again</ButtonLink>
         <ButtonLink href="/play" variant="secondary">
           Back to the hub
         </ButtonLink>

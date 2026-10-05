@@ -852,6 +852,10 @@ export type Database = {
         Returns: string;
       };
       start_room: { Args: { p_room_id: string; p_user_id: string }; Returns: boolean };
+      topics_with_questions: {
+        Args: { p_board?: string; p_subject: string; p_tier?: string };
+        Returns: string[];
+      };
       weekly_leaderboard: {
         Args: { p_limit?: number; p_scope?: string };
         Returns: {
