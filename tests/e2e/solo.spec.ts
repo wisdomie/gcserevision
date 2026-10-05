@@ -11,7 +11,7 @@ import {
 test.use({ viewport: { width: 360, height: 740 } });
 
 const ALGEBRA_TOPICS =
-  /Linear equations|Quadratics|Substitution|Sequences|Simplifying|Expanding|Rearranging/;
+  /Linear equations|Quadratics|Substitution|Sequences|Simplifying|Expanding|Rearranging|Straight-line graphs/;
 
 test("AQA Higher player completes a 10-question Algebra session", async ({ page }) => {
   await signUp(page, { board: "aqa", tier: "Higher" });
