@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnswerInput } from "@/components/game/AnswerInput";
 import { Timer } from "@/components/game/Timer";
+import { Diagram } from "@/components/math/Diagram";
 import { MathInline, MathText } from "@/components/math/MathText";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -148,6 +149,7 @@ export function QuestionView({
           </span>
         </div>
         <MathText text={q.promptMd} className="text-lg" />
+        {q.diagram && <Diagram diagram={q.diagram} />}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -256,6 +258,7 @@ export function RevealView({ room, reveal }: { room: RoomState; reveal: RoomReve
       {room.question && (
         <Card>
           <MathText text={room.question.promptMd} className="text-lg" />
+          {room.question.diagram && <Diagram diagram={room.question.diagram} />}
         </Card>
       )}
       <Card

@@ -48,6 +48,7 @@ export function normalise(raw: string): string {
     .replace(/\\(?:pounds|textsterling) ?/g, "£")
     .replace(/\\\$/g, "$")
     .replace(/\\colon/g, ":")
+    .replace(/\^\{?\\circ\}?|\\degree|\\circ/g, "°")
     .replace(/\\(?:times|cdot)/g, "*")
     .replace(/×|·/g, "*");
 
@@ -71,7 +72,10 @@ export interface ParseNumberOptions {
 export function parseNumber(s: string, opts: ParseNumberOptions = {}): number | null {
   let t = s.trim();
   if (opts.unit) {
-    const unit = opts.unit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // cm² normalises to cm^{2}; also accept cm^2 and cm2
+    const unit = normalise(opts.unit)
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+      .replace(/\\\^\\\{(\d+)\\\}/g, "(?:\\^\\{?$1\\}?|$1)");
     t = t.replace(new RegExp(`\\s*${unit}$`), "");
   }
   if (opts.percent) t = t.replace(/\s*%$/, "");
