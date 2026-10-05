@@ -23,6 +23,7 @@ pnpm db:start           # local Supabase; prints URL and keys for .env.local
 pnpm db:reset           # rebuild from supabase/migrations + supabase/seed.sql
 pnpm db:test            # pgTAP tests in supabase/tests (RLS checks)
 pnpm db:types           # regenerate src/types/database.ts after a migration
+pnpm import:questions   # load content/questions/*.csv into the database (--check to only validate)
 ```
 
 ## Notes for cloud sessions

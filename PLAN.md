@@ -647,10 +647,10 @@ Each milestone ends with: tests passing, checklist ticked here, and a commit.
 - [x] Generators for angles, Pythagoras, area, trigonometry, straight-line graphs, charts, scatter graphs
 
 ### M8: Polish and hardening
-- [ ] PWA manifest and offline shell
-- [ ] Sound effects (mutable), subtle animations (respecting reduced motion)
-- [ ] Rate limiting, error monitoring, accessibility audit (axe), Lighthouse pass on mobile
-- [ ] Hand-written word-problem bank (about 100 originals) loaded via a CSV importer script
+- [x] PWA manifest and offline shell
+- [x] Sound effects (mutable), subtle animations (respecting reduced motion)
+- [x] Rate limiting, error monitoring, accessibility audit (axe), Lighthouse pass on mobile
+- [x] Hand-written word-problem bank (about 100 originals) loaded via a CSV importer script
 
 ### M9: Second subject (proof the architecture works)
 - [ ] Add Biology (or Chemistry) rows to `subjects` and `topics`
