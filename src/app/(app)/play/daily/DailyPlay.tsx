@@ -104,7 +104,7 @@ function DailyResults({ overview }: { overview: DailyOverview }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <Card className="flex flex-col gap-2 text-center">
+      <Card className="motion-safe:animate-pop-in flex flex-col gap-2 text-center">
         <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold focus:outline-none">
           Today&apos;s results
         </h1>
