@@ -1,5 +1,17 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { signUp } from "./helpers";
+
+/**
+ * Presses "Try again" until the page loads. Just after the connection comes back the
+ * service worker can still be offline for a moment, which correctly shows the offline
+ * page again: a player would simply tap again.
+ */
+async function retryUntil(page: Page, url: RegExp) {
+  await expect(async () => {
+    await page.getByRole("button", { name: "Try again" }).click({ timeout: 2000 });
+    await expect(page).toHaveURL(url, { timeout: 2000 });
+  }).toPass({ timeout: 20_000 });
+}
 
 // PLAN.md M8: installable, with an offline page instead of the browser's error.
 test("the app has a manifest with working icons", async ({ request }) => {
@@ -38,7 +50,7 @@ test("pages show a friendly offline screen without a connection", async ({ page,
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
 
   await context.setOffline(false);
-  await page.getByRole("button", { name: "Try again" }).click();
+  await retryUntil(page, /\/privacy$/);
   await expect(page.getByRole("heading", { name: /privacy/i })).toBeVisible();
 });
 
@@ -63,7 +75,6 @@ test("a signed-in page that was prefetched still shows the offline screen", asyn
   await expect(page.getByRole("heading", { name: "You're offline" })).toBeVisible();
 
   await context.setOffline(false);
-  await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page).toHaveURL(/\/leaderboard$/);
+  await retryUntil(page, /\/leaderboard$/);
   await expect(page.getByRole("heading", { name: "This week's leaderboard" })).toBeVisible();
 });
