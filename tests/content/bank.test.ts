@@ -149,6 +149,40 @@ describe("bankQuestionFromRecord", () => {
     ).toThrow(/3.2e5/);
   });
 
+  it("supports keyword answers for recall questions", () => {
+    const q = bankQuestionFromRecord(
+      record({
+        subject: "biology",
+        topic: "photosynthesis",
+        kind: "keywords",
+        answer: "light|sunlight;carbon dioxide|co2",
+        need: "1",
+        reject: "oxygen",
+        wrong: "water|oxygen and light",
+        final: "Light",
+      }),
+    );
+    expect(q).toMatchObject({
+      subjectSlug: "biology",
+      inputType: "text",
+      answerSpec: {
+        kind: "keywords",
+        groups: [
+          ["light", "sunlight"],
+          ["carbon dioxide", "co2"],
+        ],
+        need: 1,
+        reject: ["oxygen"],
+      },
+    });
+    expect(bankQuestionFromRecord(record()).subjectSlug).toBe("maths");
+    expect(() =>
+      bankQuestionFromRecord(
+        record({ kind: "keywords", answer: "light", wrong: "Lights.", final: "light" }),
+      ),
+    ).toThrow(/"Lights." is marked correct/);
+  });
+
   it("rejects mistakes", () => {
     expect(() => bankQuestionFromRecord(record({ final: "13" }))).toThrow(/fails the checker/);
     expect(() =>
@@ -166,27 +200,56 @@ describe("bankQuestionFromRecord", () => {
   });
 });
 
-describe("the word-problem bank", () => {
+describe("the question bank", () => {
   const { questions, errors } = loadBank();
   const seed = readFileSync(join(__dirname, "..", "..", "supabase", "seed.sql"), "utf8");
   const generatedTopics = new Set(listGenerators().map((g) => g.topicSlug));
 
-  it("has about 250 valid questions", () => {
+  it("has about 250 maths and 210 biology questions, all valid", () => {
     expect(errors).toEqual([]);
-    expect(questions.length).toBeGreaterThanOrEqual(240);
+    const count = (subject: string) => questions.filter((q) => q.subjectSlug === subject).length;
+    expect(count("maths")).toBeGreaterThanOrEqual(240);
+    expect(count("biology")).toBeGreaterThanOrEqual(210);
   });
 
-  it("has at least 6 questions for every topic it covers", () => {
+  it("has at least 6 questions for every topic it covers (5 for Triple-only topics)", () => {
+    const biology = readFileSync(
+      join(__dirname, "..", "..", "supabase", "migrations", "20261010000000_biology.sql"),
+      "utf8",
+    );
+    const tripleOnly = biology.slice(biology.indexOf("-- Separate (Triple) Biology only"));
     const counts = new Map<string, number>();
     for (const q of questions) counts.set(q.topicSlug, (counts.get(q.topicSlug) ?? 0) + 1);
-    for (const [topic, n] of counts) expect(n, topic).toBeGreaterThanOrEqual(6);
+    for (const [topic, n] of counts)
+      expect(n, topic).toBeGreaterThanOrEqual(tripleOnly.includes(`('${topic}',`) ? 5 : 6);
   });
 
-  it("uses seeded topics that already have generated questions", () => {
+  it("uses seeded topics; maths ones already have generated questions", () => {
+    const biology = readFileSync(
+      join(__dirname, "..", "..", "supabase", "migrations", "20261010000000_biology.sql"),
+      "utf8",
+    );
     for (const q of questions) {
-      expect(seed, q.slug).toContain(`('${q.topicSlug}',`);
-      // So the topic shows in the topic picker
-      expect(generatedTopics, q.slug).toContain(q.topicSlug);
+      if (q.subjectSlug === "maths") {
+        expect(seed, q.slug).toContain(`('${q.topicSlug}',`);
+        // So the topic shows in the topic picker
+        expect(generatedTopics, q.slug).toContain(q.topicSlug);
+      } else {
+        expect(q.subjectSlug, q.slug).toBe("biology");
+        expect(biology, q.slug).toContain(`('${q.topicSlug}',`);
+      }
+    }
+  });
+
+  it("keeps biology topic slugs apart from maths ones", () => {
+    // Games match generators to topics by slug, so subjects must not share one
+    const biologyTopics = new Set(
+      questions.filter((q) => q.subjectSlug === "biology").map((q) => q.topicSlug),
+    );
+    expect(biologyTopics.size).toBeGreaterThanOrEqual(33);
+    for (const slug of biologyTopics) {
+      expect(generatedTopics.has(slug), slug).toBe(false);
+      expect(seed, slug).not.toContain(`('${slug}',`);
     }
   });
 

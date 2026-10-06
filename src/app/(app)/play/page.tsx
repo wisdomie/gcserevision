@@ -33,9 +33,14 @@ export default async function PlayHub() {
       <Card className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Solo practice</h2>
         <p className="text-muted text-sm">
-          Pick your topics and get a worked solution after every question.
+          Pick your topics and get a worked solution after every question. Maths and Biology.
         </p>
-        <ButtonLink href="/play/solo">Start practising</ButtonLink>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <ButtonLink href="/play/solo">Start practising</ButtonLink>
+          <ButtonLink href="/play/solo?subject=biology" variant="secondary">
+            Practise Biology
+          </ButtonLink>
+        </div>
       </Card>
 
       <div className="grid gap-3 sm:grid-cols-2">

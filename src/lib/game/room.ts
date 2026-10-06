@@ -4,6 +4,7 @@ import { z } from "zod";
 import { MAX_ANSWER_LENGTH } from "@/lib/engine/answers/normalise";
 import { compareDuel } from "@/lib/engine/scoring";
 import { BOARD_SLUGS, TIERS } from "@/lib/engine/types";
+import { SubjectSlugSchema } from "./subjects";
 
 /** No O, 0, I, 1 or L: easy to read out and type on a phone. */
 export const ROOM_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -35,6 +36,9 @@ const slug = z.string().regex(/^[a-z0-9-]{1,60}$/);
 
 export const RoomSettingsSchema = z.object({
   mode: z.enum(["room", "duel"]),
+  subject: SubjectSlugSchema.default("maths"),
+  /** Science only: Combined Science rooms leave out separate-only topics. */
+  course: z.enum(["combined", "separate"]).default("combined"),
   /** null = mixed boards: only questions valid for every board */
   board: z.enum(BOARD_SLUGS).nullable(),
   tier: z.enum(TIERS),

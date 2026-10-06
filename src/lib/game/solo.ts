@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { MAX_ANSWER_LENGTH } from "@/lib/engine/answers/normalise";
 import { createRng } from "@/lib/engine/rng";
+import { SubjectSlugSchema } from "./subjects";
 import type {
   GeneratedQuestion,
   PublicQuestion,
@@ -15,6 +16,7 @@ export const SOLO_COUNTS = [5, 10, 20] as const;
 export const SOLO_SECONDS_PER_QUESTION = 60;
 
 export const SoloStartSchema = z.object({
+  subject: SubjectSlugSchema.default("maths"),
   topicSlugs: z.array(z.string().regex(/^[a-z0-9-]{1,60}$/)).max(100),
   count: z.union([z.literal(5), z.literal(10), z.literal(20)]),
   timed: z.boolean(),

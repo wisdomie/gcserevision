@@ -653,9 +653,9 @@ Each milestone ends with: tests passing, checklist ticked here, and a commit.
 - [x] Hand-written word-problem bank (about 100 originals) loaded via a CSV importer script
 
 ### M9: Second subject (proof the architecture works)
-- [ ] Add Biology (or Chemistry) rows to `subjects` and `topics`
-- [ ] Multiple-choice and keyword-match question types for recall-style questions
-- [ ] Optional: AI-marked longer answers through the Claude API, with a per-user daily cap, caching and a clear "marked by AI" label
+- [x] Add Biology (or Chemistry) rows to `subjects` and `topics`
+- [x] Multiple-choice and keyword-match question types for recall-style questions
+- [ ] Optional: AI-marked longer answers through the Claude API, with a per-user daily cap, caching and a clear "marked by AI" label (deferred to future development, at the user's request)
 
 ## 15. Definition of done for the MVP (M0–M5)
 

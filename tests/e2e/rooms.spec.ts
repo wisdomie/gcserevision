@@ -53,7 +53,7 @@ test("two friends play a live room and see the winner", async ({ page: host, bro
     // Everyone answered, so the question closes straight away
     await expect(host.getByRole("heading", { name: /Correct! \+\d+ points/ })).toBeVisible();
     await expect(guest.getByRole("heading", { name: "Not quite" })).toBeVisible();
-    await expect(guest.getByText("Answer:")).toBeVisible();
+    await expect(guest.getByText("Answer:", { exact: true })).toBeVisible();
     await expect(guest.getByRole("table", { name: "Scoreboard" })).toBeVisible();
     await expectNoHorizontalScroll(guest);
   }

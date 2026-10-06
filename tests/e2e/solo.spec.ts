@@ -48,7 +48,7 @@ test("AQA Higher player completes a 10-question Algebra session", async ({ page 
       page.getByRole("heading", { level: 2, name: answerRight ? "Correct!" : "Not quite" }),
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Worked solution" })).toBeVisible();
-    await expect(page.getByText("Answer:")).toBeVisible();
+    await expect(page.getByText("Answer:", { exact: true })).toBeVisible();
     await expectNoHorizontalScroll(page);
     await page.getByRole("button", { name: i < 10 ? "Next question" : "See results" }).click();
   }
