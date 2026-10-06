@@ -61,16 +61,19 @@ async function main() {
   if (!url || !key) throw new Error("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
   const db = createClient<Database>(url, key, { auth: { persistSession: false } });
 
-  const { data: subject } = await db.from("subjects").select("id").eq("slug", "maths").single();
-  const { data: topics } = await db.from("topics").select("id, slug").eq("subject_id", subject!.id);
+  const { data: topics } = await db.from("topics").select("id, slug, subject_id, subjects(slug)");
   const { data: boards } = await db.from("exam_boards").select("id, slug");
-  const topicId = new Map(topics!.map((t) => [t.slug, t.id]));
+  // Topic slugs are unique within a subject
+  const topicKey = (subject: string, topic: string) => `${subject}/${topic}`;
+  const topicByKey = new Map(
+    topics!.map((t) => [topicKey(t.subjects!.slug, t.slug), { id: t.id, subjectId: t.subject_id }]),
+  );
   const boardId = new Map(boards!.map((b) => [b.slug, b.id]));
 
-  const missing = questions.filter((q) => !topicId.has(q.topicSlug));
+  const missing = questions.filter((q) => !topicByKey.has(topicKey(q.subjectSlug, q.topicSlug)));
   if (missing.length > 0)
     throw new Error(
-      `Unknown topics: ${missing.map((q) => `${q.slug} (${q.topicSlug})`).join(", ")}`,
+      `Unknown topics: ${missing.map((q) => `${q.slug} (${q.subjectSlug}/${q.topicSlug})`).join(", ")}`,
     );
 
   const { data: saved, error } = await db
@@ -78,8 +81,8 @@ async function main() {
     .upsert(
       questions.map((q) => ({
         slug: q.slug,
-        subject_id: subject!.id,
-        topic_id: topicId.get(q.topicSlug)!,
+        subject_id: topicByKey.get(topicKey(q.subjectSlug, q.topicSlug))!.subjectId,
+        topic_id: topicByKey.get(topicKey(q.subjectSlug, q.topicSlug))!.id,
         tier: q.tier,
         calculator: q.calculator,
         type: q.inputType,

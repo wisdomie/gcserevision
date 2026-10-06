@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ProfileForm } from "@/components/profile/ProfileForm";
+import { ScienceForm } from "@/components/profile/ScienceForm";
 import { Card } from "@/components/ui/Card";
 import { percent, topicReport, type RankedTopic } from "@/lib/game/stats";
 import { getMyProfile } from "@/lib/profile/server";
@@ -27,7 +28,11 @@ function TopicList({ topics, tone }: { topics: RankedTopic[]; tone: "strong" | "
           </div>
           {tone === "weak" && (
             <Link
-              href={`/play/solo?topics=${t.slug}`}
+              href={
+                t.subject && t.subject !== "maths"
+                  ? `/play/solo?subject=${t.subject}&topics=${t.slug}`
+                  : `/play/solo?topics=${t.slug}`
+              }
               className="text-accent min-h-11 shrink-0 content-center rounded-xl px-3 text-sm font-semibold underline"
             >
               Practise
@@ -44,12 +49,20 @@ export default async function ProfilePage() {
   const supabase = await createClient();
   const [{ data: boards }, { data: stats }] = await Promise.all([
     supabase.from("exam_boards").select("slug, name").order("name"),
-    supabase.from("topic_stats").select("attempts, correct, topics(slug, name)"),
+    supabase.from("topic_stats").select("attempts, correct, topics(slug, name, subjects(slug))"),
   ]);
   const report = topicReport(
     (stats ?? []).flatMap((s) =>
       s.topics
-        ? [{ slug: s.topics.slug, name: s.topics.name, attempts: s.attempts, correct: s.correct }]
+        ? [
+            {
+              slug: s.topics.slug,
+              name: s.topics.name,
+              subject: s.topics.subjects?.slug,
+              attempts: s.attempts,
+              correct: s.correct,
+            },
+          ]
         : [],
     ),
   );
@@ -109,7 +122,10 @@ export default async function ProfilePage() {
       {auth?.isAnonymous && <SaveProgress />}
 
       <Card className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Settings</h2>
+        <div>
+          <h2 className="text-lg font-semibold">Settings</h2>
+          <p className="text-muted text-sm">The exam board and tier here are for maths.</p>
+        </div>
         <ProfileForm
           boards={(boards ?? []).map((b) => ({ slug: b.slug, name: b.name }))}
           initial={
@@ -124,6 +140,26 @@ export default async function ProfilePage() {
           }
           submitLabel="Save changes"
           afterSave="stay"
+        />
+      </Card>
+
+      <Card className="flex scroll-mt-20 flex-col gap-4" id="science">
+        <div>
+          <h2 className="text-lg font-semibold">Science</h2>
+          <p className="text-muted text-sm">Used for all your science subjects.</p>
+        </div>
+        <ScienceForm
+          boards={(boards ?? []).map((b) => ({ slug: b.slug, name: b.name }))}
+          initial={
+            profile?.science
+              ? {
+                  board: profile.science.board.slug,
+                  tier: profile.science.tier,
+                  course: profile.science.course,
+                }
+              : null
+          }
+          submitLabel="Save science settings"
         />
       </Card>
 

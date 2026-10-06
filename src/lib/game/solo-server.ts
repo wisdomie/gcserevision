@@ -35,45 +35,76 @@ const SessionSettingsSchema = z.discriminatedUnion("mode", [
 /** Our payloads are plain JSON objects; the generated DB types need the cast. */
 const asJson = (value: object) => value as unknown as Json;
 
-const SUBJECT = "maths";
-
 interface Topic {
   id: number;
   name: string;
+  /** Only in separate (Triple) science, not Combined Science. */
+  separateOnly: boolean;
 }
 
-export async function loadSubjectAndTopics(admin: Admin) {
+export type Course = "combined" | "separate";
+
+/** Whether a topic is studied on a course (maths has no course). */
+export const topicInCourse = (topic: Topic | undefined, course: Course | null) =>
+  !!topic && (!topic.separateOnly || course === "separate");
+
+export async function loadSubjectAndTopics(admin: Admin, slug = "maths") {
   const { data: subject, error } = await admin
     .from("subjects")
     .select("id")
-    .eq("slug", SUBJECT)
-    .single();
-  if (error || !subject) throw new Error(`Subject ${SUBJECT} missing: ${error?.message}`);
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (error) throw error;
+  if (!subject) throw new ApiError(400, "That subject isn't available.");
   const { data: topics, error: topicsError } = await admin
     .from("topics")
-    .select("id, slug, name")
+    .select("id, slug, name, separate_only")
     .eq("subject_id", subject.id);
   if (topicsError) throw topicsError;
   return {
     subjectId: subject.id,
-    topics: new Map<string, Topic>(topics.map((t) => [t.slug, { id: t.id, name: t.name }])),
+    topics: new Map<string, Topic>(
+      topics.map((t) => [t.slug, { id: t.id, name: t.name, separateOnly: t.separate_only }]),
+    ),
   };
 }
 
+/**
+ * The player's tier and board for a subject: maths has its own, and all the
+ * sciences share the science settings, which also say which course they take.
+ */
 async function loadPlayer(
   admin: Admin,
   userId: string,
-): Promise<{ tier: Tier; board: BoardSlug | null }> {
+  subject: string,
+): Promise<{ tier: Tier; board: BoardSlug | null; course: Course | null }> {
   const { data, error } = await admin
     .from("profiles")
-    .select("tier, exam_boards(slug)")
+    .select(
+      "tier, science_tier, science_course, " +
+        "board:exam_boards!profiles_exam_board_id_fkey(slug), " +
+        "science_board:exam_boards!profiles_science_board_id_fkey(slug)",
+    )
     .eq("id", userId)
     .maybeSingle();
   if (error) throw error;
-  if (!data?.tier) throw new ApiError(409, "Finish setting up your profile first.");
+  const row = data as unknown as {
+    tier: string | null;
+    science_tier: string | null;
+    science_course: string | null;
+    board: { slug: string } | null;
+    science_board: { slug: string } | null;
+  } | null;
+  if (!row?.tier) throw new ApiError(409, "Finish setting up your profile first.");
+  if (subject === "maths")
+    return { tier: row.tier as Tier, board: (row.board?.slug as BoardSlug) ?? null, course: null };
+  if (!row.science_tier || !row.science_course || !row.science_board)
+    throw new ApiError(409, "Choose your science exam board, tier and course first.");
   return {
-    tier: data.tier as Tier,
-    board: (data.exam_boards?.slug as BoardSlug | undefined) ?? null,
+    tier: row.science_tier as Tier,
+    board: row.science_board.slug as BoardSlug,
+    course: row.science_course as Course,
   };
 }
 
@@ -115,23 +146,25 @@ async function serveQuestion(
 
 export async function startSoloSession(userId: string, input: SoloStartInput): Promise<SoloState> {
   const admin = createAdminClient();
-  const player = await loadPlayer(admin, userId);
-  const { subjectId, topics } = await loadSubjectAndTopics(admin);
+  const player = await loadPlayer(admin, userId, input.subject);
+  const { subjectId, topics } = await loadSubjectAndTopics(admin, input.subject);
 
   const filter = {
     tier: player.tier,
     board: player.board ?? undefined,
     topicSlugs: input.topicSlugs,
   };
-  const generators = listGenerators(filter).filter((g) => topics.has(g.topicSlug));
-  const bank = (await loadBankGenerators(admin, filter)).filter((g) => topics.has(g.topicSlug));
+  const onCourse = (g: { topicSlug: string }) =>
+    topicInCourse(topics.get(g.topicSlug), player.course);
+  const generators = listGenerators(filter).filter(onCourse);
+  const bank = (await loadBankGenerators(admin, filter, input.subject)).filter(onCourse);
   if (generators.length + bank.length === 0)
     throw new ApiError(400, "There are no questions for those topics yet.");
 
   const seed = randomSeed();
   const settings: SoloSettings = {
     mode: "solo",
-    subject: SUBJECT,
+    subject: input.subject,
     board: player.board,
     tier: player.tier,
     topicSlugs: input.topicSlugs,
@@ -156,6 +189,7 @@ export async function startSoloSession(userId: string, input: SoloStartInput): P
   const current = await serveQuestion(admin, session.id, settings, 0, subjectId, topics);
   return {
     sessionId: session.id,
+    subject: settings.subject,
     count: settings.count,
     timed: settings.timed,
     secondsPerQuestion: SOLO_SECONDS_PER_QUESTION,
@@ -279,7 +313,7 @@ export async function submitSoloAnswer(
     // A daily attempt's questions are linked when it starts
     next = await linkedQuestion(admin, session.id, link.idx + 1);
   } else {
-    const { subjectId, topics } = await loadSubjectAndTopics(admin);
+    const { subjectId, topics } = await loadSubjectAndTopics(admin, session.settings.subject);
     next = await serveQuestion(
       admin,
       session.id,
@@ -333,6 +367,7 @@ export async function getSoloState(userId: string, sessionId: string): Promise<S
 
   return {
     sessionId: session.id,
+    subject: session.settings.subject,
     count: session.settings.count,
     timed: session.settings.timed,
     secondsPerQuestion: SOLO_SECONDS_PER_QUESTION,

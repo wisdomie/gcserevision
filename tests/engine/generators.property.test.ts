@@ -75,6 +75,7 @@ function specNumbers(spec: AnswerSpec): number[] {
     case "multi":
       return spec.parts.flatMap((p) => specNumbers(p.spec));
     case "expression":
+    case "keywords":
       return [];
   }
 }

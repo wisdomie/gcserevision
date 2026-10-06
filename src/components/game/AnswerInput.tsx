@@ -11,6 +11,7 @@ const HINTS: Record<Exclude<InputType, "mcq">, string> = {
   fraction: "Type a fraction, e.g. 3/4 or 1 1/2",
   expression: "e.g. 2x + 4, x = 3, 2:5 or 4.5 x 10^3",
   multi: "Type your answer",
+  text: "A word or a short sentence is enough",
 };
 
 interface Props {
@@ -92,8 +93,8 @@ export function AnswerInput({ inputType, options, value, onChange, onEnter, disa
         disabled={disabled}
         maxLength={200}
         autoComplete="off"
-        autoCapitalize="off"
-        spellCheck={false}
+        autoCapitalize={inputType === "text" ? "sentences" : "off"}
+        spellCheck={inputType === "text"}
         aria-describedby="answer-hint"
         className="border-border bg-background min-h-12 rounded-xl border px-3 text-lg"
       />

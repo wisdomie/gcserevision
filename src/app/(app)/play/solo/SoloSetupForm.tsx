@@ -7,12 +7,15 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TopicPicker, toggleTopics } from "@/components/game/TopicPicker";
 import { SOLO_COUNTS } from "@/lib/game/solo";
+import type { SubjectSlug } from "@/lib/game/subjects";
 import type { TopicGroup } from "@/lib/game/topic-groups";
 
 export function SoloSetupForm({
+  subject,
   groups,
   initialTopics,
 }: {
+  subject: SubjectSlug;
   groups: TopicGroup[];
   initialTopics: string[];
 }) {
@@ -32,7 +35,7 @@ export function SoloSetupForm({
     const res = await fetch("/api/solo/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topicSlugs: [...selected], count, timed }),
+      body: JSON.stringify({ subject, topicSlugs: [...selected], count, timed }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {

@@ -32,7 +32,7 @@ export async function ensureDailyChallenge(date: string, admin: Admin = createAd
 
   const { subjectId, topics } = await loadSubjectAndTopics(admin);
   const eligible = dailyEligible(listGenerators()).filter((g) => topics.has(g.topicSlug));
-  const bank = dailyEligible(await loadBankGenerators(admin, {})).filter((g) =>
+  const bank = dailyEligible(await loadBankGenerators(admin, {}, "maths")).filter((g) =>
     topics.has(g.topicSlug),
   );
   const bankByKey = new Map(bank.map((g) => [g.key, g]));

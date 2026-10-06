@@ -14,7 +14,7 @@ import { bankGenerator, isBankKey, type BankRow } from "./bank";
 type Admin = ReturnType<typeof createAdminClient>;
 
 const COLUMNS =
-  "id, slug, tier, calculator, difficulty, marks, type, prompt_md, options, answer_spec, solution, topics(slug), question_boards(exam_boards(slug))";
+  "id, slug, tier, calculator, difficulty, marks, type, prompt_md, options, answer_spec, solution, topics(slug, subjects(slug)), question_boards(exam_boards(slug))";
 
 interface DbRow {
   id: string;
@@ -28,7 +28,7 @@ interface DbRow {
   options: unknown;
   answer_spec: unknown;
   solution: unknown;
-  topics: { slug: string } | null;
+  topics: { slug: string; subjects: { slug: string } | null } | null;
   question_boards: { exam_boards: { slug: string } | null }[];
 }
 
@@ -42,6 +42,7 @@ function toRow(r: DbRow): BankRow | null {
   return {
     id: r.id,
     slug: r.slug ?? r.id,
+    subjectSlug: r.topics.subjects?.slug ?? "maths",
     topicSlug: r.topics.slug,
     tier: r.tier as BankQuestion["tier"],
     calculator: r.calculator as BankQuestion["calculator"],
@@ -56,10 +57,11 @@ function toRow(r: DbRow): BankRow | null {
   };
 }
 
-/** Published bank questions as generators, filtered like generated questions. */
+/** A subject's published bank questions as generators, filtered like generated questions. */
 export async function loadBankGenerators(
   admin: Admin,
   filter: GeneratorFilter,
+  subject: string,
 ): Promise<QuestionGenerator[]> {
   const { data, error } = await admin
     .from("questions")
@@ -69,7 +71,7 @@ export async function loadBankGenerators(
   if (error) throw error;
   const gens = (data as unknown as DbRow[])
     .map(toRow)
-    .filter((r): r is BankRow => r !== null)
+    .filter((r): r is BankRow => r !== null && r.subjectSlug === subject)
     .map(bankGenerator);
   return filterGenerators(gens, filter);
 }

@@ -17,6 +17,8 @@ export interface SoloSummary {
 
 export interface SoloState {
   sessionId: string;
+  /** Subject slug, such as "maths" or "biology". */
+  subject: string;
   count: number;
   timed: boolean;
   secondsPerQuestion: number;
