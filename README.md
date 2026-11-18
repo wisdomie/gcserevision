@@ -5,24 +5,28 @@ A mobile-first web game for GCSE students to practise exam-style questions and c
 ## Features
 
 ### Game Modes
+
 - **Solo Practice:** Untimed or timed practice with instant marking and worked solutions
 - **Live Rooms:** 2–20 friends join with a 6-character code, answer questions together, faster correct answers earn more points
 - **Duel:** Automatic 2-player live mode
 - **Daily Challenge:** The same 5 questions for everyone each day, with leaderboards and streaks
 
 ### Subjects & Exam Boards
+
 - Supports **GCSE Mathematics** and **Biology** (Combined and Triple Science), with an architecture that makes adding further subjects a data change plus new question content
 - Supports all major UK exam boards: **AQA**, **Edexcel (Pearson)**, **OCR**, **WJEC/Eduqas**
 - **Foundation and Higher tiers** available
 - Questions are tailored by exam board and tier through tags and filters
 
 ### Content
+
 - **Generated questions:** Parameterised TypeScript generators produce unlimited fresh questions across algebra, geometry, and number topics
 - **Hand-written originals:** Exam-style questions written in the same style as real GCSE papers, stored in the database
 - Maths topics include algebra, geometry, trigonometry, number and word problems
 - Maths rendering with **KaTeX** and input via **MathLive** web component with text fallback
 
 ### User Features
+
 - Leaderboards and scoring
 - User profiles and progress tracking
 - Dark and light mode support
@@ -31,20 +35,20 @@ A mobile-first web game for GCSE students to practise exam-style questions and c
 
 ## Tech Stack
 
-| Concern | Technology |
-|---|---|
-| Framework | Next.js 16 (App Router) + TypeScript |
-| Styling | Tailwind CSS 4 |
-| Database | Supabase (Postgres) |
-| Auth | Supabase Auth |
-| Realtime | Supabase Realtime |
-| Hosting | Vercel (app) + Supabase Cloud (database) |
-| Maths rendering | KaTeX |
-| Maths input | MathLive |
-| Testing | Vitest (unit & property) + Playwright (e2e) |
-| Package manager | pnpm |
-| Lint & format | ESLint + Prettier |
-| Monitoring | Sentry |
+| Concern         | Technology                                  |
+| --------------- | ------------------------------------------- |
+| Framework       | Next.js 16 (App Router) + TypeScript        |
+| Styling         | Tailwind CSS 4                              |
+| Database        | Supabase (Postgres)                         |
+| Auth            | Supabase Auth                               |
+| Realtime        | Supabase Realtime                           |
+| Hosting         | Vercel (app) + Supabase Cloud (database)    |
+| Maths rendering | KaTeX                                       |
+| Maths input     | MathLive                                    |
+| Testing         | Vitest (unit & property) + Playwright (e2e) |
+| Package manager | pnpm                                        |
+| Lint & format   | ESLint + Prettier                           |
+| Monitoring      | Sentry                                      |
 
 ## Quick Start
 
