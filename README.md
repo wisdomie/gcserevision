@@ -11,7 +11,7 @@ A mobile-first web game for GCSE students to practise exam-style questions and c
 - **Daily Challenge:** The same 5 questions for everyone each day, with leaderboards and streaks
 
 ### Subjects & Exam Boards
-- Currently supports **GCSE Mathematics** with extensible architecture for other subjects (Biology, Chemistry, Physics, English, etc.)
+- Supports **GCSE Mathematics** and **Biology** (Combined and Triple Science), with an architecture that makes adding further subjects a data change plus new question content
 - Supports all major UK exam boards: **AQA**, **Edexcel (Pearson)**, **OCR**, **WJEC/Eduqas**
 - **Foundation and Higher tiers** available
 - Questions are tailored by exam board and tier through tags and filters
@@ -19,7 +19,7 @@ A mobile-first web game for GCSE students to practise exam-style questions and c
 ### Content
 - **Generated questions:** Parameterised TypeScript generators produce unlimited fresh questions across algebra, geometry, and number topics
 - **Hand-written originals:** Exam-style questions written in the same style as real GCSE papers, stored in the database
-- Topics covered: algebra, geometry, trigonometry, number, statistics, ratio, proportion, and more
+- Maths topics include algebra, geometry, trigonometry, number and word problems
 - Maths rendering with **KaTeX** and input via **MathLive** web component with text fallback
 
 ### User Features
@@ -91,10 +91,6 @@ The codebase is organized around a clean separation of concerns:
 - **`src/app/`** – Next.js App Router pages and API routes
 - **`supabase/`** – Database migrations, seed data, and RLS policies
 - **`tests/`** – Unit tests for the engine, e2e tests with Playwright
-
-## License
-
-This project is part of GCSE revision tools. All original question content and code are available for educational use.
 
 ## Contributing
 
