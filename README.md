@@ -1,6 +1,6 @@
 # Past Paper Game
 
-A mobile-first web game for GCSE students to practise exam-style questions and compete with friends. All questions are original or generated—no exam-board content is copied.
+A mobile-first web game for GCSE students to practise exam-style questions and compete with friends. All questions are original or generated no exam-board content is copied.
 
 ## Features
 
